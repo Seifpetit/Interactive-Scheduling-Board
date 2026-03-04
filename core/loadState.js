@@ -1,6 +1,6 @@
 export async function loadState() {
   try {
-    const response = await fetch("http://127.0.0.1:8000/state");
+    const response = await fetch("/state");
 
     if(!response.ok) throw new Error(`Server error: ${response.status}`);
 
