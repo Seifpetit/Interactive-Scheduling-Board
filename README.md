@@ -1,13 +1,16 @@
+
+![Demo](./docs/demo3.gif)
+
+## 🎥  Gif Demo
+
 # 🍔 BurgerMe Scheduler
 
 Drag-and-drop weekly scheduling board built for real restaurant managers.
 
 This tool replaces messy WhatsApp scheduling with a visual, fast, and editor-style workflow.
 
-## 🎥 Demo
-
-![Demo](./docs/demo2.gif)
-
+## 🎥  Live Demo
+[https://burgerme-scheduler-production.up.railway.app]
 
 # 🧠 The Problem
 
