@@ -150,8 +150,7 @@ export class HourSlot extends UINode {
       g.fill("#fff");
       g.textSize(13);
       g.textAlign(g.LEFT, g.CENTER);
-      g.stroke("#000");
-      g.strokeWeight(1.5);
+        g.noStroke();
       const font = R.assets?.fonts?.["Bold"];
       if (font) g.textFont(font);
       g.text(task.name, this.x + 6, this.y + this.h / 2 - 4);
@@ -209,8 +208,6 @@ export class HourSlot extends UINode {
         g.fill("#fff");
         g.textSize(13);
         g.textAlign(g.LEFT, g.CENTER);
-        g.stroke("#000");
-        g.strokeWeight(1.5);
         const font = R.assets?.fonts?.["Bold"];
         if (font) g.textFont(font);
         g.text(task.name, this.x + 8, this.y + this.h / 2 - 2);
@@ -219,7 +216,7 @@ export class HourSlot extends UINode {
         // duration badge right side
         g.fill("#ffffff88");
         g.textSize(11);
-        const font2 = R.assets?.fonts?.["Medium"];
+        const font2 = R.assets?.fonts?.["Italic"];
         if (font2) g.textFont(font2);
         g.textAlign(g.RIGHT, g.CENTER);
         g.text(`${duration}h`, this.x + this.w - 8, this.y + this.h / 2 - 2);
@@ -314,8 +311,7 @@ export class HourSlot extends UINode {
     g.fill("#fff");
     g.textSize(13);
     g.textAlign(g.LEFT, g.CENTER);
-    g.stroke("#000");
-    g.strokeWeight(1.5);
+    
     const font = R.assets?.fonts?.["Bold"];
     if (font) g.textFont(font);
     g.text(drag.task.name, -hw + 8, -hh + slotH / 2 - 2);
@@ -325,7 +321,7 @@ export class HourSlot extends UINode {
     g.fill("#ffffff88");
     g.textSize(11);
     g.textAlign(g.RIGHT, g.CENTER);
-    const font2 = R.assets?.fonts?.["Medium"];
+    const font2 = R.assets?.fonts?.["Italic"];
     if (font2) g.textFont(font2);
     g.text(`${duration}h`, hw - 8, -hh + slotH / 2 - 2);
 
