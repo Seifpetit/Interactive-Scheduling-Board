@@ -2,14 +2,14 @@
 
 # 🗓️ Interactive Scheduling Board
 
-A visual planning board built as a lightweight editor.
+A spatial scheduling interface built as a lightweight editor.
 
 Drag, place, adjust — no forms, no friction.
 
 ---
 
 ## 🔗 Live Demo
-interactive-scheduling-board-production.up.railway.app
+https://interactive-scheduling-board-production.up.railway.app
 
 ---
 
@@ -21,32 +21,33 @@ This project explores a different model:
 
 → **planning through direct manipulation**
 
-You don’t “fill” schedules — you *shape* them.
+Tasks are not filled — they are **placed in time**.
+
+The schedule is shaped visually, like a board.
 
 ---
 
-## ⚡ Features
+## ⚡ Interaction Model
 
-- Drag & drop tasks into a weekly grid  
-- Time-based layout (Mon–Sun)  
-- Scrollable task tray  
-- Smooth, continuous interaction  
-- Immediate visual feedback  
+- Tasks are **objects**, not entries  
+- Time is represented as a **2D grid (day × hour)**  
+- Scheduling becomes **positioning**, not editing  
+- Interaction is **continuous**, not modal  
 
-The board behaves like a small editor, not a CRUD app.
+The board behaves like a small editor, not a CRUD interface.
 
 ---
 
 ## 🧠 System
 
-Built around a minimal interaction engine:
+Built as a minimal interaction engine:
 
-- State-driven rendering  
+- State-driven rendering loop  
 - Central input routing (`operator.js`)  
-- Frame-based layout recalculation  
+- Frame-based layout computation  
 - Composable UI nodes (tray, grid, slots)  
 
-No DOM layout dependency. Everything is drawn.
+Everything is rendered manually — no DOM layout dependency.
 
 ---
 
@@ -69,7 +70,7 @@ Next:
 - Context menus  
 - Validation logic  
 - Export (image / PDF)  
-- Dataset / data layer page  
+- Dataset / data layer  
 
 ---
 
