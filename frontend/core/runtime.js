@@ -1,6 +1,19 @@
+export function startOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 Sun, 1 Mon
+  const diff = day === 0 ? -6 : 1 - day; // move to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export const R = {
 
   appState: {},
+
+  calendar: {
+    currentWeekStart: startOfWeek(new Date()),
+  },
 
   // ─────────────────────────────────────────
   // INPUT  (written by captureInput)
@@ -27,37 +40,33 @@ export const R = {
   // INTERACTION  (written by resolveHit + routeInput)
   // ─────────────────────────────────────────
   interaction: {
-    hovered:  null,       // { type, element, ref }
-    click:    null,       // null | "single" | "double"
+    hovered:  null,
+    click:    null,
     released: false,
 
-    // Restriction selection mode — active while user picks slots to restrict
     restrictMode: {
-      active:       false,
-      employeeId:   null,
-      selected:     null,   // Set<slotId> — built fresh when mode opens
-      _lastToggled:   null,   // prevents rapid re-toggle on same slot during drag
-      _didDragSelect: false,  // true if drag-select fired this gesture — suppresses click toggle
+      active:         false,
+      employeeId:     null,
+      selected:       null,
+      _lastToggled:   null,
+      _didDragSelect: false,
     },
+
     drag: {
       active:       false,
 
-      // source — only one is set at a time
-      kind:         null,   // "card" | "slot"
-      card:         null,   // EmployeeCard (kind === "card")
-      sourceSlot:   null,   // SlotRow      (kind === "slot")
+      kind:         null,   // "taskCard" | "placedTask"
+      card:         null,
+      sourceSlot:   null,
 
-      // shared
-      _nearestSlot: null,   // SlotRow currently closest to cursor
-      offsetX:      0,      // cursor offset from drag origin
+      _nearestSlot: null,
+      offsetX:      0,
       offsetY:      0,
 
-      // tilt — continuous velocity-based rotation, read by all ghost renders
-      tilt:         0,      // current rotation in radians
-      _tiltPrevX:   null,   // previous cursor x for velocity calc
+      tilt:         0,
+      _tiltPrevX:   null,
 
-      // verdict — computed each frame by getDragVerdict(), read by SlotRow.render
-      verdict:      null,   // null | "valid" | "locked" | "unqualified" | "double" | "neutral"
+      verdict:      null,
     },
   },
 
@@ -65,11 +74,11 @@ export const R = {
   // TRANSITION  (written by operator.beginTransition)
   // ─────────────────────────────────────────
   transition: {
-    phase:     "BOOTING",  // "BOOTING" | "READY" | "FETCHING" | "ERROR"
-    progress:  0,          // 0→1, reported by async work via setProgress()
-    fadeAlpha: 1,          // 1 = black overlay, ticks to 0 after transition
-    message:   "",         // shown during FETCHING
-    error:     "",         // shown during ERROR
+    phase:     "BOOTING",
+    progress:  0,
+    fadeAlpha: 1,
+    message:   "",
+    error:     "",
   },
 
   // ─────────────────────────────────────────

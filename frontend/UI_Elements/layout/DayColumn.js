@@ -5,15 +5,10 @@ import { R }        from "../../core/runtime.js";
 const START_HOUR = 8;
 const END_HOUR   = 23;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DayColumn  — one column in the WeekGrid
-// Children: HourSlot × (END_HOUR - START_HOUR)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export class DayColumn extends UINode {
   constructor(dayIndex) {
     super();
-    this.hitType  = null; // column itself is not hittable — slots are
+    this.hitType  = null;
     this.dayIndex = dayIndex;
 
     this._buildSlots();
@@ -24,8 +19,6 @@ export class DayColumn extends UINode {
     for (let hour = START_HOUR; hour < END_HOUR; hour++) {
       this.children.push(new HourSlot(this.dayIndex, hour));
     }
-    // give each slot a reference to the full column slots
-    // so it can calculate spanning height and block ownership
     for (const slot of this.children) {
       slot._columnSlots = this.children;
     }
@@ -33,13 +26,18 @@ export class DayColumn extends UINode {
 
   get slots() { return this.children; }
 
-  getDayLabel() {
-    return ["MON","TUE","WED","THU","FRI","SAT","SUN"][this.dayIndex];
+  getDate() {
+    const d = new Date(R.calendar.currentWeekStart);
+    d.setDate(d.getDate() + this.dayIndex);
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
 
-  // ─────────────────────────────
-  // LAYOUT
-  // ─────────────────────────────
+  getDayLabel() {
+    const d = this.getDate();
+    const day = ["MON","TUE","WED","THU","FRI","SAT","SUN"][this.dayIndex];
+    return `${day} ${d.getDate()}`;
+  }
 
   layout() {
     const headerH  = 36;
@@ -56,21 +54,20 @@ export class DayColumn extends UINode {
     });
   }
 
-  // ─────────────────────────────
-  // RENDER
-  // ─────────────────────────────
-
   render(g) {
     if (!this.visible) return;
     g.push();
 
-    // column bg
     g.fill("#12122a");
     g.noStroke();
     g.rect(this.x, this.y, this.w, this.h, 8);
 
-    // header
-    const isToday = (new Date().getDay() + 6) % 7 === this.dayIndex;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const colDate = this.getDate();
+    const isToday = today.getTime() === colDate.getTime();
+
     g.fill(isToday ? "#4a90d9" : "#2a2a4a");
     g.rect(this.x, this.y, this.w, 34, 8);
 
@@ -83,7 +80,6 @@ export class DayColumn extends UINode {
 
     g.pop();
 
-    // children (slots)
     super.render(g);
   }
 }

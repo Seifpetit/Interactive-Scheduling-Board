@@ -1,12 +1,5 @@
 import { R } from "./runtime.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// commands
-// Every mutation of R.appState lives here.
-// Every mutation also fires a fetch() to the backend — fire and forget.
-// UI updates immediately (optimistic), backend catches up async.
-// ─────────────────────────────────────────────────────────────────────────────
-
 function _post(path, body) {
   fetch(path, {
     method:  "POST",
@@ -28,7 +21,26 @@ function _delete(path) {
     .catch(err => console.warn(`[api] DELETE ${path} failed:`, err));
 }
 
+function _shiftWeek(days) {
+  const d = new Date(R.calendar.currentWeekStart);
+  d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
+  R.calendar.currentWeekStart = d;
+}
+
 export const commands = {
+
+  // ═══════════════════════════════════════
+  // CALENDAR
+  // ═══════════════════════════════════════
+
+  prevWeek() {
+    _shiftWeek(-7);
+  },
+
+  nextWeek() {
+    _shiftWeek(7);
+  },
 
   // ═══════════════════════════════════════
   // TASKS — direct calls
@@ -48,7 +60,7 @@ export const commands = {
   },
 
   // ═══════════════════════════════════════
-  // TASKS — context menu actions (ref = TaskCard)
+  // TASKS — context menu actions
   // ═══════════════════════════════════════
 
   renameTask(ref, payload) {
@@ -102,11 +114,11 @@ export const commands = {
     for (const slotId in placements) {
       if (placements[slotId]?.taskId === id) delete placements[slotId];
     }
-    _delete(`/tasks/${id}`); // cascade removes placements in DB
+    _delete(`/tasks/${id}`);
   },
 
   // ═══════════════════════════════════════
-  // PLACEMENTS — context menu (ref = HourSlot)
+  // PLACEMENTS — context menu
   // ═══════════════════════════════════════
 
   unplace(ref) {
@@ -129,18 +141,30 @@ export const commands = {
     const placements = R.appState.placements ?? {};
     const from = placements[fromSlotId];
     if (!from) return false;
+
     const to = placements[toSlotId];
     placements[toSlotId] = from;
-    if (to) { placements[fromSlotId] = to; }
-    else    { delete placements[fromSlotId]; }
+
+    if (to) placements[fromSlotId] = to;
+    else delete placements[fromSlotId];
+
     _post("/placements/move", { fromSlotId, toSlotId });
     return true;
   },
 
   clearDay(dayIndex) {
     const placements = R.appState.placements ?? {};
+
+    const start = new Date(R.calendar.currentWeekStart);
+    start.setDate(start.getDate() + dayIndex);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
     for (const slotId in placements) {
-      if (slotId.startsWith(`${dayIndex}_`)) {
+      const d = new Date(slotId);
+      if (d >= start && d < end) {
         delete placements[slotId];
         _delete(`/placements/${slotId}`);
       }
@@ -150,9 +174,19 @@ export const commands = {
   clearWeek() {
     const placements = R.appState.placements ?? {};
     for (const slotId in placements) {
-      _delete(`/placements/${slotId}`);
+      const d = new Date(slotId);
+
+      const start = new Date(R.calendar.currentWeekStart);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+
+      if (d >= start && d < end) {
+        _delete(`/placements/${slotId}`);
+        delete placements[slotId];
+      }
     }
-    R.appState.placements = {};
   },
 
 };
