@@ -25,7 +25,7 @@ export const UI_ELEMENTS = {
 // ─────────────────────────────────────────────────────────────────────────────
 export function initUI() {
   UI_ELEMENTS.planner     = new Planner(R.appState, commands);
-  UI_ELEMENTS.button       = new GenerateButton(commands.generate.bind(commands));
+  UI_ELEMENTS.button       = null;//new GenerateButton(commands.generate.bind(commands));
   UI_ELEMENTS.exportButton = new ExportButton();
   _initGeometry();
 }

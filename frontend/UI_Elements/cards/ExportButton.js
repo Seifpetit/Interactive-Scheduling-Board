@@ -200,7 +200,7 @@ export class ExportButton {
     g.rect(this.x, this.y, this.w, this.h, 5);
 
     g.fill("#111");
-    g.textFont(R.assets.fonts["Medium"]);
+    g.textFont(R.assets.fonts["Bold"]);
     g.textSize(11);
     g.textAlign(g.LEFT, g.CENTER);
     g.text("⬇  Export", this.x + 10, this.y + this.h / 2 - 1);

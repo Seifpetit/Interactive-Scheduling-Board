@@ -11,6 +11,7 @@ import { R } from "../../core/runtime.js";
 //   this._renderer.renderInput(g, this);
 // ─────────────────────────────────────────────────────────────────────────────
 
+
 export class MenuRenderer {
 
   renderMenu(g, ctrl) {
@@ -48,7 +49,7 @@ export class MenuRenderer {
     g.rect(x, y + itemH / 2, w, itemH / 2);
 
     g.fill("#fff");
-    g.textFont(R.assets.fonts["Medium"]);
+    g.textFont(R.assets.fonts["Italic"]);
     g.textAlign(g.LEFT, g.CENTER); g.textSize(13);
     g.text(pendingAction?.label ?? "", x + 10, y + itemH / 2);
 
@@ -95,7 +96,7 @@ export class MenuRenderer {
     // Label
     const labelX = (isSubmenu && isFirst) ? x + 22 : x + 12;
     g.fill(isHov ? "#fff" : (isSubmenu && isFirst ? "#888" : "#ccc"));
-    g.textFont(R.assets.fonts["Medium"]);
+    g.textFont(R.assets.fonts["Italic"]);
     g.textAlign(g.LEFT, g.CENTER); g.textSize(13);
     g.text(action.label, labelX, itemY + itemH / 2);
 

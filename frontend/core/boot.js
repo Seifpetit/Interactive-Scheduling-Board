@@ -13,7 +13,7 @@ export async function initState() {
 
     setProgress(0.2);
 
-    const appState = await loadState();
+    const appState = await loadState(setProgress);
 
     if (!appState) throw new Error("Server returned no state");
 

@@ -1,193 +1,80 @@
+![Scheduler Screenshot](./docs/screenshot.png)
 
-![Demo](./docs/demo3.gif)
+# 🗓️ Interactive Scheduling Board
 
-## 🎥  Gif Demo
+A visual planning board built as a lightweight editor.
 
-# 🍔 BurgerMe Scheduler
+Drag, place, adjust — no forms, no friction.
 
-Drag-and-drop weekly scheduling board built for real restaurant managers.
+---
 
-This tool replaces messy WhatsApp scheduling with a visual, fast, and editor-style workflow.
+## 🔗 Live Demo
+https://burgerme-scheduler-production.up.railway.app
 
-## 🎥  Live Demo
-[https://burgerme-scheduler-production.up.railway.app]
+---
 
-# 🧠 The Problem
+## 💡 Concept
 
-Small restaurants often create weekly schedules using:
+Most planning tools rely on forms, clicks, and structured input.
 
-WhatsApp messages
+This project explores a different model:
 
-Static images
+→ **planning through direct manipulation**
 
-Manual Excel sheets
+You don’t “fill” schedules — you *shape* them.
 
-Last-minute edits
+---
 
-This leads to:
+## ⚡ Features
 
-Confusion
+- Drag & drop tasks into a weekly grid  
+- Time-based layout (Mon–Sun)  
+- Scrollable task tray  
+- Smooth, continuous interaction  
+- Immediate visual feedback  
 
-Manual corrections
+The board behaves like a small editor, not a CRUD app.
 
-No validation
+---
 
-Repeated back-and-forth
+## 🧠 System
 
-BurgerMe Scheduler explores a better workflow:
+Built around a minimal interaction engine:
 
-Immediate visual assignment with direct manipulation.
+- State-driven rendering  
+- Central input routing (`operator.js`)  
+- Frame-based layout recalculation  
+- Composable UI nodes (tray, grid, slots)  
 
+No DOM layout dependency. Everything is drawn.
 
+---
 
-# 🚀 What It Currently Does (V0)
+## 🛠 Tech
 
-Drag & drop employee cards
+- JavaScript  
+- p5.js (render loop)  
+- Custom UI architecture  
 
-Weekly grid layout (Mon–Sun)
+No React. No UI frameworks.
 
-Shift sections (Lunch / Dinner)
+---
 
-Scrollable employee tray
+## 🚧 Status
 
-Smooth inertial scrolling
+**V0 — Interactive Core**
 
-Elastic overscroll behavior
+Next:
 
-Layered rendering (main + overlay buffers)
+- Context menus  
+- Validation logic  
+- Export (image / PDF)  
+- Dataset / data layer page  
 
-Command-based interaction routing
+---
 
-Draft assignment state
+## ▶ Run
 
-This is not a form-based app.
-It behaves like a lightweight editor.
-
-
-
-# 🏗 Architecture
-
-The system is structured around a small interaction engine.
-
-core/
-  runtime.js
-  operator.js
-  routeInput.js
-  commands.js
-  updateInput.js
-
-UI_Elements/
-  EmployeeTray.js
-  EmployeeCard.js
-  WeekGrid.js
-  DayColumn.js
-  SlotRow.js
-  ShiftSection.js
-  Button.js
-  Schedule.js
-Design Principles
-
-State-driven rendering
-
-Geometry recalculated every frame
-
-Interaction routed through a central operator
-
-Separation of layout, interaction, and rendering layers
-
-Offscreen rendering buffers (gMain, gOverlay)
-
-No DOM layout dependency
-
-This allows the board to behave like a mini editor rather than a typical CRUD UI. 
-
-
-
-# 🛠 Tech Stack
-
-JavaScript
-
-p5.js (custom render loop)
-
-Modular UI component architecture
-
-No React.
-No framework UI abstractions.
-Rendering is manually controlled.
-
-
-# 📈 Roadmap
-
-V0.5 — Stable Editor Core
-
-Context menus (sticker / slot / shift)
-
-Slot count editing
-
-Drop validation preview
-
-Interaction stabilization
-
-Initialization barrier refinement
-
-V1 — Business-Ready Tool
-
-Constraint validation (availability / capacity)
-
-Schedule export (image / PDF)
-
-Save & load draft state
-
-Undo stack
-
-Cleaned UX polish
-
-Deterministic interaction (no race instabilities)
-
-
-# 🎯 Why This Project Exists
-
-This project is both:
-
-A real workflow experiment for small restaurant scheduling
-
-A personal exploration into building interaction systems and editor-like interfaces
-
-It focuses on:
-
-Input routing
-
-State discipline
-
-Visual-first workflows
-
-Tooling architecture
-
-
-
-# ▶ How To Run
-
-#Example (adjust if needed)
+```bash
 npm install
 npm run dev
-
-Or open with Live Server if using static setup.
-
-
-
-# 🧩 Next Steps
-
-Immediate development focus:
-
-Add context menus to stickers and slots
-
-Implement dynamic slot resizing
-
-Add basic validation rules
-
-Prepare export-ready schedule view
-
-📌 Status
-
-Current version: V0 — Interactive Scheduling Board
-Development stage: Entering V0.5 stabilization
