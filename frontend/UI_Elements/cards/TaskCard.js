@@ -181,8 +181,7 @@ export class TaskCard extends UINode {
     g.fill("#fff");
     g.textSize(14);
     g.textAlign(g.CENTER, g.CENTER);
-    g.stroke("#000");
-    g.strokeWeight(2);
+    
     const f = R.assets?.fonts?.["Bold"];
     if (f) g.textFont(f);
     g.text(this.task.name, 0, 0);
