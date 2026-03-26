@@ -9,7 +9,7 @@ Drag, place, adjust — no forms, no friction.
 ---
 
 ## 🔗 Live Demo
-https://burgerme-scheduler-production.up.railway.app
+interactive-scheduling-board-production.up.railway.app
 
 ---
 
