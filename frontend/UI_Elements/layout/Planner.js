@@ -84,6 +84,7 @@ export class Planner extends UINode {
     this.tray        = new TaskTray(state.tasks || [], commands);
     this.grid        = new WeekGrid();
     this.prevBtn     = new WeekNavButton("<=", () => this.commands.prevWeek());
+    this.todayBtn    = new WeekNavButton("Today", () => this.commands.recenterWeek());
     this.nextBtn     = new WeekNavButton("=>", () => this.commands.nextWeek());
     this.contextMenu = new ContextMenuController(commands);
     this.toaster     = new Toaster();
@@ -92,7 +93,7 @@ export class Planner extends UINode {
       this.toaster.add(message, type, mode);
     };
 
-    this.children = [this.grid, this.tray, this.prevBtn, this.nextBtn];
+    this.children = [this.grid, this.tray, this.prevBtn, this.todayBtn, this.nextBtn];
 
     this._lastOverflow = false;
   }
@@ -108,11 +109,13 @@ export class Planner extends UINode {
     const btnW       = 42;
     const btnH       = 30;
     const btnY       = this.y + pad + 4;
+    const todayW     = 74;
 
     this.tray.setGeometry(this.x + pad, contentY, trayW, contentH);
     this.grid.setGeometry(gridX, contentY, gridW, contentH);
 
     this.prevBtn.setGeometry(gridX, btnY, btnW, btnH);
+    this.todayBtn.setGeometry(gridX + (gridW - todayW) / 4, btnY, todayW, btnH);
     this.nextBtn.setGeometry(gridX + gridW - btnW, btnY, btnW, btnH);
   }
 
@@ -122,6 +125,7 @@ export class Planner extends UINode {
     this.setGeometry(20, 20, p5.width - 40, p5.height - 40);
 
     this.prevBtn.update(mouse);
+    this.todayBtn.update(mouse);
     this.nextBtn.update(mouse);
 
     if (this.tray.contains(mouse.x, mouse.y) && !R.interaction.drag.active) {
@@ -219,6 +223,7 @@ export class Planner extends UINode {
     gMain.pop();
 
     this.prevBtn.render(gMain);
+    this.todayBtn.render(gMain);
     this.nextBtn.render(gMain);
     this.grid.render(gMain);
 

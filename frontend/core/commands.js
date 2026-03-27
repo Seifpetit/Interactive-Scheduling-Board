@@ -38,6 +38,17 @@ export const commands = {
     _shiftWeek(-7);
   },
 
+  recenterWeek() {
+    const today = new Date();
+    const day = today.getDay(); // 0 Sun, 1 Mon
+    const diff = day === 0 ? -6 : 1 - day;
+
+    today.setDate(today.getDate() + diff);
+    today.setHours(0, 0, 0, 0);
+
+    R.calendar.currentWeekStart = today;
+  },
+
   nextWeek() {
     _shiftWeek(7);
   },
