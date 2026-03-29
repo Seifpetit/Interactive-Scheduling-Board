@@ -11,6 +11,10 @@ const CATEGORY_COLORS = {
   other:   "#92ba00",
 };
 
+function getEffectiveDuration(placement, task) {
+  return placement?.customDuration ?? task?.duration ?? 1;
+}
+
 function makeSlotId(weekStart, dayIndex, hour) {
   const d = new Date(weekStart);
   d.setDate(d.getDate() + dayIndex);
@@ -55,7 +59,7 @@ export class HourSlot extends UINode {
       if (!placement) continue;
 
       const task     = R.appState?.tasks?.find(t => t.id === placement.taskId);
-      const duration = task?.duration ?? 1;
+      const duration = getEffectiveDuration(placement, task);
       const endIndex = i + duration - 1;
 
       if (myIndex >= i && myIndex <= endIndex) {
@@ -153,7 +157,7 @@ export class HourSlot extends UINode {
 
     if (owned && owned.isStart) {
       const { task, placement } = owned;
-      const duration = task?.duration ?? 1;
+      const duration = getEffectiveDuration(placement, task);
       const blockH   = this._blockHeight(duration);
       const color    = CATEGORY_COLORS[task?.category] ?? CATEGORY_COLORS.other;
       const hovMatch = R.interaction.hoveredTaskId === placement.taskId;
@@ -207,9 +211,19 @@ export class HourSlot extends UINode {
 
     } else {
       const isError = this.highlightState === "error";
+      const isWarning = this.highlightState === "warning";
+
       if (this.highlight) {
-        g.fill(isError ? "#e2621d18" : "#27ae6018");
-        g.stroke(isError ? "#e2621d" : "#27ae60");
+        g.fill(
+          isError ? "#e2621d18" :
+          isWarning ? "#f5a62318" :
+          "#27ae6018"
+        );
+        g.stroke(
+          isError ? "#e2621d" :
+          isWarning ? "#f5a623" :
+          "#27ae60"
+        );
         g.strokeWeight(isError ? 2 : 1.5);
       } else {
         g.fill("#1e1e2e");
@@ -230,7 +244,7 @@ export class HourSlot extends UINode {
     if (!drag.active || drag.kind !== "placedTask" || !drag.task) return;
 
     const color    = CATEGORY_COLORS[drag.task.category] ?? CATEGORY_COLORS.other;
-    const duration = drag.task.duration ?? 1;
+    const duration = drag.customDuration ?? drag.task?.duration ?? 1;
     const slotH    = drag.ghostH / duration;
 
     g.push();

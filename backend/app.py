@@ -54,8 +54,14 @@ def startup():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS placements (
             slot_id TEXT PRIMARY KEY,
-            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE
+            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            custom_duration INTEGER
         )
+    """)
+    # safe migration for older DBs
+    cur.execute("""
+        ALTER TABLE placements
+        ADD COLUMN IF NOT EXISTS custom_duration INTEGER
     """)
     conn.commit()
     cur.close()
@@ -74,14 +80,20 @@ def get_state() -> Dict[str, Any]:
     cur.execute("SELECT id, name, duration, energy, category FROM tasks ORDER BY id")
     tasks_rows = cur.fetchall()
 
-    cur.execute("SELECT slot_id, task_id FROM placements")
+    cur.execute("SELECT slot_id, task_id, custom_duration FROM placements")
     placement_rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
     # placements as { slotId: { taskId } } — matches R.appState.placements shape
-    placements = { row["slot_id"]: { "taskId": row["task_id"] } for row in placement_rows }
+    placements = {
+        row["slot_id"]: {
+            "taskId": row["task_id"],
+            "customDuration": row["custom_duration"],
+        }
+        for row in placement_rows
+    }
 
     return {
         "tasks":      [dict(r) for r in tasks_rows],
@@ -166,19 +178,30 @@ def delete_task(task_id: str) -> Dict[str, Any]:
 def create_placement(body: Dict[str, Any]) -> Dict[str, Any]:
     slot_id = body.get("slotId")
     task_id = body.get("taskId")
+    custom_duration = body.get("customDuration")
 
     if not slot_id or not task_id:
         raise HTTPException(status_code=400, detail="slotId and taskId required")
 
+    if custom_duration is not None:
+        try:
+            custom_duration = int(custom_duration)
+        except Exception:
+            raise HTTPException(status_code=400, detail="customDuration must be an integer")
+        if custom_duration <= 0:
+            raise HTTPException(status_code=400, detail="customDuration must be > 0")
+
     conn = get_conn()
     cur  = conn.cursor()
-    # upsert — if slot already occupied, replace it
     cur.execute(
         """
-        INSERT INTO placements (slot_id, task_id) VALUES (%s, %s)
-        ON CONFLICT (slot_id) DO UPDATE SET task_id = EXCLUDED.task_id
+        INSERT INTO placements (slot_id, task_id, custom_duration)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (slot_id) DO UPDATE
+        SET task_id = EXCLUDED.task_id,
+            custom_duration = EXCLUDED.custom_duration
         """,
-        (slot_id, task_id)
+        (slot_id, task_id, custom_duration)
     )
     conn.commit()
     cur.close()
@@ -202,7 +225,32 @@ def delete_placement(slot_id: str) -> Dict[str, Any]:
 
     return { "ok": True }
 
+@app.patch("/placements/{slot_id:path}")
+def update_placement(slot_id: str, body: Dict[str, Any]) -> Dict[str, Any]:
+    if "customDuration" not in body:
+        raise HTTPException(status_code=400, detail="customDuration required")
 
+    custom_duration = body.get("customDuration")
+
+    if custom_duration is not None:
+        try:
+            custom_duration = int(custom_duration)
+        except Exception:
+            raise HTTPException(status_code=400, detail="customDuration must be an integer")
+        if custom_duration <= 0:
+            raise HTTPException(status_code=400, detail="customDuration must be > 0")
+
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute(
+        "UPDATE placements SET custom_duration = %s WHERE slot_id = %s",
+        (custom_duration, slot_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return { "ok": True }
 # ─────────────────────────────────────────────────────────────────────────────
 # POST /placements/move  — move or swap placements between slots
 # ─────────────────────────────────────────────────────────────────────────────
@@ -218,29 +266,36 @@ def move_placement(body: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_conn()
     cur  = conn.cursor()
 
-    # fetch both current values
-    cur.execute("SELECT task_id FROM placements WHERE slot_id = %s", (from_slot,))
+    cur.execute("SELECT task_id, custom_duration FROM placements WHERE slot_id = %s", (from_slot,))
     from_row = cur.fetchone()
-    cur.execute("SELECT task_id FROM placements WHERE slot_id = %s", (to_slot,))
+
+    cur.execute("SELECT task_id, custom_duration FROM placements WHERE slot_id = %s", (to_slot,))
     to_row = cur.fetchone()
 
     if not from_row:
         cur.close(); conn.close()
         raise HTTPException(status_code=404, detail="source slot has no placement")
 
-    from_task = from_row["task_id"]
-    to_task   = to_row["task_id"] if to_row else None
+    from_task     = from_row["task_id"]
+    from_custom   = from_row["custom_duration"]
+
+    to_task       = to_row["task_id"] if to_row else None
+    to_custom     = to_row["custom_duration"] if to_row else None
 
     if to_task:
-        # swap
-        cur.execute("UPDATE placements SET task_id = %s WHERE slot_id = %s", (to_task,   from_slot))
-        cur.execute("UPDATE placements SET task_id = %s WHERE slot_id = %s", (from_task, to_slot))
+        cur.execute(
+            "UPDATE placements SET task_id = %s, custom_duration = %s WHERE slot_id = %s",
+            (to_task, to_custom, from_slot)
+        )
+        cur.execute(
+            "UPDATE placements SET task_id = %s, custom_duration = %s WHERE slot_id = %s",
+            (from_task, from_custom, to_slot)
+        )
     else:
-        # move
         cur.execute("DELETE FROM placements WHERE slot_id = %s", (from_slot,))
         cur.execute(
-            "INSERT INTO placements (slot_id, task_id) VALUES (%s, %s)",
-            (to_slot, from_task)
+            "INSERT INTO placements (slot_id, task_id, custom_duration) VALUES (%s, %s, %s)",
+            (to_slot, from_task, from_custom)
         )
 
     conn.commit()

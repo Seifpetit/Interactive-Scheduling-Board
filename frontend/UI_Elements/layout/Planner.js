@@ -4,6 +4,8 @@ import { WeekGrid }              from "./WeekGrid.js";
 import { HourSlot }              from "../cards/HourSlot.js";
 import { ContextMenuController } from "../contextMenu/ContextMenuController.js";
 import { Toaster }               from "../overlays/Toaster.js";
+import { getDragVerdict }        from "../../core/validator.js";
+import { updateCoachFeedback } from "../../core/coachFeedback.js";
 import { R }                     from "../../core/runtime.js";
 
 class WeekNavButton extends UINode {
@@ -143,13 +145,14 @@ export class Planner extends UINode {
         ? drag.card.getDragY() + drag.card.h / 2
         : drag.ghostY + drag.ghostH * 0.1;
 
-      const nearest  = this.grid.findNearestSlot(cx, cy);
+      const nearest = this.grid.findNearestSlot(cx, cy);
+      drag._nearestSlot = nearest;
+
       const duration = drag.kind === "taskCard"
         ? (drag.card.task.duration ?? 1)
-        : (drag.task?.duration ?? 1);
+        : (drag.customDuration ?? drag.task?.duration ?? 1);
 
       const blockSlots = new Set();
-      let overflow = false;
 
       if (nearest) {
         const day = this.grid.days[nearest.dayIndex];
@@ -158,45 +161,58 @@ export class Planner extends UINode {
           for (let i = 0; i < duration; i++) {
             const slot = day.slots[startIndex + i];
             if (slot) blockSlots.add(slot);
-            else overflow = true;
           }
         }
       }
 
-      if (overflow && !drag._overflowToastFired) {
+      const verdict = getDragVerdict();
+      drag.verdict = verdict;
+
+      if (
+        verdict?.level === "error" &&
+        verdict?.code === "DAY_OVERFLOW" &&
+        !drag._overflowToastFired
+      ) {
         drag._overflowToastFired = true;
-        R.toast("Task overflows end of day — try dropping higher", "warning");
+        R.toast(verdict.message, "warning");
       }
-      if (!overflow) drag._overflowToastFired = false;
-      this._lastOverflow = overflow;
+
+      if (verdict?.code !== "DAY_OVERFLOW") {
+        drag._overflowToastFired = false;
+      }
 
       for (const day of this.grid.days) {
         for (const slot of day.slots) {
           const isSource = drag.kind === "placedTask" && slot.slotId === drag.fromSlotId;
           if (isSource) {
-            slot.highlight      = false;
+            slot.highlight = false;
             slot.highlightState = null;
             continue;
           }
+
           if (blockSlots.has(slot)) {
-            slot.highlight      = true;
-            slot.highlightState = overflow ? "error" : "ok";
+            slot.highlight = true;
+            slot.highlightState =
+              verdict?.level === "error" ? "error" :
+              verdict?.level === "warning" ? "warning" :
+              "ok";
           } else {
-            slot.highlight      = false;
+            slot.highlight = false;
             slot.highlightState = null;
           }
         }
       }
 
-      drag._nearestSlot = nearest;
-
     } else {
+      drag.verdict = null;
       if (this._lastOverflow !== false) this._lastOverflow = false;
     }
 
     this.tray.update(mouse);
     this.grid.update(mouse);
+    
     this.toaster.update();
+    updateCoachFeedback();
   }
 
   render(gMain, gOverlay) {

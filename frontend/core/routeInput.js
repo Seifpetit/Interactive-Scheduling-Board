@@ -1,7 +1,7 @@
 import { R }              from "./runtime.js";
 import { UI_ELEMENTS }   from "./operator.js";
 import { commands }      from "./commands.js";
-import { beginTransition } from "./operator.js";
+import { getDragVerdict } from "./validator.js";
 
 export function routeInput() {
   if (R.transition.phase !== "READY") return;
@@ -111,16 +111,20 @@ function _onClick(hovered, mouse) {
   // start placed-task drag
   if (type === "placedTask") {
     tray?.addInput?.cancel();
+    const placement = node.getPlacement();
+    const task = R.appState.tasks?.find(t => t.id === placement?.taskId) ?? null;
+    const duration = placement?.customDuration ?? task?.duration ?? 1;
     const drag      = R.interaction.drag;
-    drag.active     = true;
-    drag.kind       = "placedTask";
-    drag.card       = null;
-    drag.fromSlotId = node.slotId;
-    drag.task       = R.appState.tasks?.find(t => t.id === node.getPlacement()?.taskId) ?? null;
-    drag.ghostX     = node.x;
-    drag.ghostY     = node.y;
-    drag.ghostW     = node.w;
-    drag.ghostH     = node._blockHeight(drag.task?.duration ?? 1);
+    drag.active         = true;
+    drag.kind           = "placedTask";
+    drag.card           = null;
+    drag.fromSlotId     = node.slotId;
+    drag.task           = task;
+    drag.customDuration = placement?.customDuration ?? null;
+    drag.ghostX         = node.x;
+    drag.ghostY         = node.y;
+    drag.ghostW         = node.w;
+    drag.ghostH         = node._blockHeight(duration);
     drag.offsetX    = mouse.x - node.x;
     drag.offsetY    = mouse.y - node.y; // node = start slot, ghost anchored to top
     drag.tilt       = 0;
@@ -172,8 +176,19 @@ function _onRelease(hovered, mouse) {
       drag.card.getDragY() + drag.card.h / 2
     );
     if (slot) {
-      commands.place(drag.card.task.id, slot.slotId);
-      slot.triggerPulse();
+      drag._nearestSlot = slot;
+      const verdict = getDragVerdict();
+
+      if (verdict?.ok) {
+        commands.place(drag.card.task.id, slot.slotId);
+        slot.triggerPulse();
+
+        if (verdict.level === "warning") {
+          R.toast(verdict.message, "warning");
+        }
+      } else if (verdict) {
+        R.toast(verdict.message, "warning");
+      }
     }
     drag.card.stopDrag();
   }
@@ -185,8 +200,19 @@ function _onRelease(hovered, mouse) {
       drag.ghostY + drag.ghostH * 0.1
     );
     if (slot && slot.slotId !== drag.fromSlotId) {
-      commands.movePlacement(drag.fromSlotId, slot.slotId);
-      slot.triggerPulse();
+      drag._nearestSlot = slot;
+      const verdict = getDragVerdict();
+
+      if (verdict?.ok) {
+        commands.movePlacement(drag.fromSlotId, slot.slotId);
+        slot.triggerPulse();
+
+        if (verdict.level === "warning") {
+          R.toast(verdict.message, "warning");
+        }
+      } else if (verdict) {
+        R.toast(verdict.message, "warning");
+      }
     }
     // dropped nowhere valid → stays in original slot, no command needed
   }
@@ -206,4 +232,6 @@ function _onRelease(hovered, mouse) {
   drag._nearestSlot = null;
   drag.tilt         = 0;
   drag._tiltPrevX   = null;
+  drag.customDuration = null;
+  drag.verdict      = null;
 }

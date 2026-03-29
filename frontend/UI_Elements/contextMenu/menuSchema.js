@@ -75,6 +75,7 @@ export const MENU_SCHEMAS = {
   ],
 
   [MENU_TYPES.PLACED_TASK]: [
+    { id: "setPlacementDuration", label: "Set custom duration (h)", input: "number" },
     { id: "unplace", label: "Remove from calendar", input: null },
   ],
 

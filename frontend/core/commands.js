@@ -16,6 +16,10 @@ function _patch(path, body) {
   }).catch(err => console.warn(`[api] PATCH ${path} failed:`, err));
 }
 
+function _getPlacementDuration(placement, task) {
+  return placement?.customDuration ?? task?.duration ?? 1;
+}
+
 function _delete(path) {
   fetch(path, { method: "DELETE" })
     .catch(err => console.warn(`[api] DELETE ${path} failed:`, err));
@@ -51,6 +55,18 @@ export const commands = {
 
   nextWeek() {
     _shiftWeek(7);
+  },
+
+  setPlacementDuration(ref, payload) {
+    const n = Number(payload);
+    if (!Number.isFinite(n) || n <= 0) return;
+
+    const placements = R.appState.placements ?? {};
+    const placement = placements[ref.slotId];
+    if (!placement) return;
+
+    placement.customDuration = n;
+    _patch(`/placements/${ref.slotId}`, { customDuration: n });
   },
 
   // ═══════════════════════════════════════
@@ -144,8 +160,11 @@ export const commands = {
 
   place(taskId, slotId) {
     R.appState.placements ??= {};
-    R.appState.placements[slotId] = { taskId };
-    _post("/placements", { slotId, taskId });
+    R.appState.placements[slotId] = {
+      taskId,
+      customDuration: null,
+    };
+    _post("/placements", { slotId, taskId, customDuration: null });
   },
 
   movePlacement(fromSlotId, toSlotId) {
@@ -155,7 +174,6 @@ export const commands = {
 
     const to = placements[toSlotId];
     placements[toSlotId] = from;
-
     if (to) placements[fromSlotId] = to;
     else delete placements[fromSlotId];
 

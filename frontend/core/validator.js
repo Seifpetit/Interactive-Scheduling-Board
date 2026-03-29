@@ -1,37 +1,148 @@
 import { R } from "./runtime.js";
 
 export const VERDICT_COLORS = {
-  valid:       "#92ba00",
-  locked:      "#e2621d",
-  restricted:  "#fba700",
-  double:      "#9b59b6",
-  neutral:     "#58e6fc",
+  ok:       "#27ae60",
+  warning:  "#f5a623",
+  error:    "#e2621d",
+  neutral:  "#58e6fc",
 };
 
-export function getAssignmentVerdict(employeeId, targetSlotId) {
-  if (!employeeId || !targetSlotId) return "neutral";
+function getTaskById(taskId) {
+  return (R.appState?.tasks ?? []).find(t => t.id === taskId) ?? null;
+}
 
-  const state = R.appState;
+function getPlacementDuration(placement, task) {
+  return placement?.customDuration ?? task?.duration ?? 1;
+}
 
-  // 1. Locked
-  if (state.slotLocks?.[targetSlotId]) return "locked";
+function parseSlotId(slotId) {
+  const d = new Date(slotId);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
-  // 2. Slot-level restriction
-  const empRestrictions = state.restrictions?.[employeeId];
-  if (empRestrictions?.includes(targetSlotId)) return "restricted";
+function addHours(date, hours) {
+  const d = new Date(date);
+  d.setHours(d.getHours() + hours);
+  return d;
+}
 
-  // 3. Double-booking — same day, different slot
-  const [dayStr] = targetSlotId.split("_");
-  const dayIndex = parseInt(dayStr, 10);
-  const assignments = state.draft?.assignments ?? {};
-  const alreadyOnDay = Object.entries(assignments).some(([slotId, empId]) => {
-    if (empId !== employeeId) return false;
-    if (slotId === targetSlotId) return false;
-    return parseInt(slotId.split("_")[0], 10) === dayIndex;
-  });
-  if (alreadyOnDay) return "double";
+function rangesOverlap(startA, endA, startB, endB) {
+  return startA < endB && startB < endA;
+}
 
-  return "valid";
+export function getPlacementRange(slotId, placement) {
+  const start = parseSlotId(slotId);
+  if (!start || !placement) return null;
+
+  const task = getTaskById(placement.taskId);
+  if (!task) return null;
+
+  const duration = getPlacementDuration(placement, task);
+  const end = addHours(start, duration);
+
+  return { start, end, duration, task, placement };
+}
+
+export function getProposedPlacementRange(task, targetSlotId, customDuration = null) {
+  const start = parseSlotId(targetSlotId);
+  if (!start || !task) return null;
+
+  const duration = customDuration ?? task?.duration ?? 1;
+  const end = addHours(start, duration);
+
+  return { start, end, duration, task };
+}
+
+export function validatePlacement({
+  task,
+  targetSlotId,
+  sourceSlotId = null,
+  customDuration = null,
+}) {
+  if (!task || !targetSlotId) {
+    return {
+      ok: false,
+      level: "error",
+      code: "INVALID_INPUT",
+      message: "Missing task or target slot",
+    };
+  }
+
+  const proposed = getProposedPlacementRange(task, targetSlotId, customDuration);
+  if (!proposed) {
+    return {
+      ok: false,
+      level: "error",
+      code: "INVALID_SLOT",
+      message: "Invalid target slot",
+    };
+  }
+
+  // Rule 1: overflow outside visible day
+  const startHour = proposed.start.getHours();
+  const endHour = startHour + proposed.duration;
+  if (endHour > 23) {
+    return {
+      ok: false,
+      level: "error",
+      code: "DAY_OVERFLOW",
+      message: "Task exceeds available space in this day",
+    };
+  }
+
+  // Rule 2: collision with other placed tasks
+  const placements = R.appState?.placements ?? {};
+
+  for (const [slotId, placement] of Object.entries(placements)) {
+    if (slotId === sourceSlotId) continue;
+
+    const existing = getPlacementRange(slotId, placement);
+    if (!existing) continue;
+
+    if (rangesOverlap(proposed.start, proposed.end, existing.start, existing.end)) {
+      return {
+        ok: false,
+        level: "error",
+        code: "OVERLAP",
+        message: `Conflicts with "${existing.task.name}"`,
+      };
+    }
+  }
+
+  // Rule 3: daily load warning
+  const dayStart = new Date(proposed.start);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  let totalHours = proposed.duration;
+
+  for (const [slotId, placement] of Object.entries(placements)) {
+    if (slotId === sourceSlotId) continue;
+
+    const existing = getPlacementRange(slotId, placement);
+    if (!existing) continue;
+
+    if (existing.start >= dayStart && existing.start < dayEnd) {
+      totalHours += existing.duration;
+    }
+  }
+
+  if (totalHours > 8) {
+    return {
+      ok: true,
+      level: "warning",
+      code: "HEAVY_DAY",
+      message: `Heavy day: ${totalHours}h scheduled`,
+    };
+  }
+
+  return {
+    ok: true,
+    level: "ok",
+    code: "VALID",
+    message: "Placement valid",
+  };
 }
 
 export function getDragVerdict() {
@@ -40,14 +151,20 @@ export function getDragVerdict() {
 
   const targetSlotId = drag._nearestSlot.slotId;
 
-  if (drag.kind === "card" && drag.card) {
-    return getAssignmentVerdict(drag.card.employee.id, targetSlotId);
+  if (drag.kind === "taskCard" && drag.card?.task) {
+    return validatePlacement({
+      task: drag.card.task,
+      targetSlotId,
+    });
   }
 
-  if (drag.kind === "slot" && drag.sourceSlot) {
-    const empId = R.appState.draft?.assignments?.[drag.sourceSlot.slotId];
-    if (!empId) return null;
-    return getAssignmentVerdict(empId, targetSlotId);
+  if (drag.kind === "placedTask" && drag.task) {
+    return validatePlacement({
+      task: drag.task,
+      targetSlotId,
+      sourceSlotId: drag.fromSlotId,
+      customDuration: drag.customDuration ?? null,
+    });
   }
 
   return null;
