@@ -1,5 +1,5 @@
-![Scheduler Screenshot](./docs/screenshot_demo_2.png)
-![Scheduler Gif](./docs/demo_1.gif)
+![Scheduler Screenshot](./docs/screenshot_auth_demo.png)
+![Scheduler Gif](./docs/demo_2.gif)
 
 # 🗓️ Interactive Scheduling Board
 

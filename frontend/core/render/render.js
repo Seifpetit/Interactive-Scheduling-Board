@@ -40,7 +40,7 @@ export function renderFrame(p5, { gMain, gOverlay }) {
 
   
   UI_ELEMENTS.button?.render(gOverlay);
-  UI_ELEMENTS.exportButton?.render(gOverlay);
+  //UI_ELEMENTS.exportButton?.render(gOverlay);
 
   UI_ELEMENTS.authModal?.render(gOverlay);
 }
