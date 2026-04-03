@@ -1,29 +1,58 @@
 import { R } from "./runtime.js";
+import { apiFetch } from "./apiFetch.js";
 
-function _post(path, body) {
-  fetch(path, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-  }).catch(err => console.warn(`[api] POST ${path} failed:`, err));
+async function _post(path, body) {
+  try {
+    const res = await apiFetch(path, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`[api] POST ${path} failed:`, res.status, text);
+    }
+  } catch (err) {
+    console.warn(`[api] POST ${path} failed:`, err);
+  }
 }
 
-function _patch(path, body) {
-  fetch(path, {
-    method:  "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-  }).catch(err => console.warn(`[api] PATCH ${path} failed:`, err));
+async function _patch(path, body) {
+  try {
+    const res = await apiFetch(path, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`[api] PATCH ${path} failed:`, res.status, text);
+    }
+  } catch (err) {
+    console.warn(`[api] PATCH ${path} failed:`, err);
+  }
 }
+
+async function _delete(path) {
+  try {
+    const res = await apiFetch(path, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`[api] DELETE ${path} failed:`, res.status, text);
+    }
+  } catch (err) {
+    console.warn(`[api] DELETE ${path} failed:`, err);
+  }
+}
+
 
 function _getPlacementDuration(placement, task) {
   return placement?.customDuration ?? task?.duration ?? 1;
 }
 
-function _delete(path) {
-  fetch(path, { method: "DELETE" })
-    .catch(err => console.warn(`[api] DELETE ${path} failed:`, err));
-}
 
 function _shiftWeek(days) {
   const d = new Date(R.calendar.currentWeekStart);

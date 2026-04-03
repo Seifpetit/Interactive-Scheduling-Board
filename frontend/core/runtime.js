@@ -37,6 +37,32 @@ export const R = {
   },
 
   // ─────────────────────────────────────────
+  // AUTH
+  // ─────────────────────────────────────────
+
+  auth: {
+    token: localStorage.getItem("planner_token") || null,
+  },
+
+  modal: {
+    open: false,
+    type: null,
+    props: null,
+  },
+
+  openModal(type, props = {}) {
+    this.modal.open = true;
+    this.modal.type = type;
+    this.modal.props = props;
+  },
+
+  closeModal() {
+    this.modal.open = false;
+    this.modal.type = null;
+    this.modal.props = null;
+  },
+
+  // ─────────────────────────────────────────
   // INTERACTION  (written by resolveHit + routeInput)
   // ─────────────────────────────────────────
   interaction: {
@@ -65,6 +91,11 @@ export const R = {
 
       tilt:         0,
       _tiltPrevX:   null,
+
+      magnet: {
+        strength: 0.2,
+        radius:   80,
+      },
 
       verdict:      null,
     },
@@ -95,4 +126,8 @@ export const R = {
 
   assets: { fonts: {} },
 
+   render: {
+    blurLayer: null,
+    noiseTex: null,
+  }
 };

@@ -23,8 +23,28 @@ new window.p5(p5 => {
     p5.pixelDensity(1);
     p5.canvas.focus();
 
+    // Create graphics layers
     gMain    = p5.createGraphics(p5.width, p5.height);
     gOverlay = p5.createGraphics(p5.width, p5.height);
+    //CREATE NOISE TEXTURE
+    if (!R.render.noiseTex) {
+      const tex = p5.createGraphics(64, 64);
+
+      tex.loadPixels();
+      for (let i = 0; i < tex.pixels.length; i += 4) {
+        const v = Math.random() * 255;
+        tex.pixels[i]     = v;
+        tex.pixels[i + 1] = v;
+        tex.pixels[i + 2] = v;
+        tex.pixels[i + 3] = 20;
+      }
+      tex.updatePixels();
+
+      R.render.noiseTex = tex;
+    }
+    R.render.bg = {
+      time: 0
+    };
 
     initState();   // async — draw loop reads R.transition.phase
   };
@@ -281,6 +301,13 @@ new window.p5(p5 => {
     p5.text(R.transition.error, p5.width / 2, p5.height / 2 + 10);
   }
 
+  // ─────────────────────────────────────────
+  // LOAGING / RETRY EVENT
+  // ─────────────────────────────────────────
+  window.addEventListener("retry_load", async () => {
+    console.log("[auth] retrying state load...");
+    await loadState();
+  });
   // ─────────────────────────────────────────
   // WINDOW RESIZE
   // ─────────────────────────────────────────

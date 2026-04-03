@@ -1,5 +1,6 @@
 import { UINode }   from "../base/UINode.js";
 import { R }      from "../../core/runtime.js";
+import { renderMaterial } from "../../core/render/materials/materialRenderer.js";
 
 const CATEGORY_COLORS = {
   study:   "#4a90d9",
@@ -88,12 +89,18 @@ export class TaskCard extends UINode {
 
   updateDrag(mouse) {
     if (!this.dragging) return;
-    const newX      = mouse.x - this.offsetX;
-    const velocityX = newX - this.dragX;
+
+    const targetX = mouse.x - this.offsetX;
+    const targetY = mouse.y - this.offsetY;
+
+    // 🧠 add lag → feels physical
+    this.dragX += (targetX - this.dragX) * 0.25;
+    this.dragY += (targetY - this.dragY) * 0.25;
+
+    const velocityX = this.dragX - this._prevDragX;
     this._prevDragX = this.dragX;
-    this.dragX      = newX;
-    this.dragY      = mouse.y - this.offsetY;
-    const maxTilt   = 0.1;
+
+    const maxTilt = 0.1;
     this.targetRotation = Math.max(-maxTilt, Math.min(maxTilt, velocityX * 0.02));
   }
 
@@ -110,7 +117,29 @@ export class TaskCard extends UINode {
   // ─────────────────────────────
 
   update(mouse) {
+    if (!this.parent) return;
+
+    const tray = this.parent;
+
+    const globalX = tray.x + this.localX;
+    const globalY = tray.y + this.localY - tray.scrollY;
+
+    const isHovered =
+      mouse.x > globalX &&
+      mouse.x < globalX + this.w &&
+      mouse.y > globalY &&
+      mouse.y < globalY + this.h;
+
+    // 🧠 rotation smoothing
     this.rotation += (this.targetRotation - this.rotation) * 0.15;
+
+    // 🧊 material
+    const materialTarget = this.dragging ? 1 : isHovered ? 0.6 : 0;
+    this.updateMaterial(materialTarget);
+
+    // 🧠 elevation
+    const elevationTarget = this.dragging ? 1 : isHovered ? 0.4 : 0;
+    this.updateElevation(elevationTarget);
   }
 
   highlight() { this.highlighted = true; }
@@ -127,41 +156,57 @@ export class TaskCard extends UINode {
     const ry = this.localY;
 
     g.push();
-    g.translate(rx + this.w / 2, ry + this.h / 2);
+
+    // 🧠 elevation shift
+    g.translate(rx + this.w / 2, ry + this.h / 2 - this.elevation * 6);
+
+    // 🧠 subtle scale
+    const scale = 1 + this.elevation * 0.03;
+    g.scale(scale);
+
     g.rotate(this.rotation);
 
-    // bg
-    let bg = this.color;
-    if (this.highlighted) bg = this.color + "dd";
-    g.fill(bg);
-    g.noStroke();
-    g.rect(-this.w/2, -this.h/2, this.w, this.h, 10);
+    // 🧠 shadow (depth)
+    if (this.elevation > 0.01) {
+      g.push();
+      g.noStroke();
+      g.fill(0, 0, 0, 50 * this.elevation);
+      g.rect(-this.w/2 + 2, -this.h/2 + 4, this.w, this.h, 10);
+      g.pop();
+    }
 
-    // energy dot
+    // 🧊 MATERIAL
+    renderMaterial(g, {
+      ...this,
+      x: this.dragging ? this.dragX : this.x,
+      y: this.dragging ? this.dragY : this.y,
+      w: this.w,
+      h: this.h,
+      color: this.color
+    });
+
+    // ───────────────── CONTENT ─────────────────
+
     const ec = { high: "#ff4444", medium: "#ffa500", low: "#44cc44" };
     g.fill(ec[this.task.energy] ?? "#888");
     g.circle(this.w/2 - 10, -this.h/2 + 10, 8);
 
-    // name
     g.fill("#fff");
     g.textSize(14);
     g.textAlign(g.LEFT, g.CENTER);
-    
+
     const f1 = R.assets?.fonts?.["Bold"];
     if (f1) g.textFont(f1);
     g.text(this.task.name, -this.w/2 + 8, -4);
-    g.noStroke();
 
-    // meta
     g.fill("#ffffffaa");
     g.textSize(11);
+
     const f2 = R.assets?.fonts?.["Medium"];
     if (f2) g.textFont(f2);
     g.text(`${this.task.duration}h · ${this.task.category}`, -this.w/2 + 8, 10);
 
     g.pop();
-
-    this.highlighted = false;
   }
 
   // ─────────────────────────────
@@ -174,9 +219,19 @@ export class TaskCard extends UINode {
     g.translate(this.dragX + this.w/2, this.dragY + this.h/2);
     g.rotate(tilt ?? this.rotation);
 
-    g.fill(this.color + "bb");
-    g.noStroke();
-    g.rect(-this.w/2, -this.h/2, this.w, this.h, 10);
+
+    renderMaterial(g, {
+      ...this,
+      x: this.dragging ? this.dragX : this.x,
+      y: this.dragging ? this.dragY : this.y,
+      w: this.w,
+      h: this.h,
+      color: this.color
+    });
+
+    //g.fill(this.color + "bb");
+    //g.noStroke();
+    //g.rect(-this.w/2, -this.h/2, this.w, this.h, 10);
 
     g.fill("#fff");
     g.textSize(14);

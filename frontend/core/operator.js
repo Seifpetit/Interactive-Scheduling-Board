@@ -3,10 +3,10 @@ import { getDragVerdict }   from "./validator.js";
 import { captureInput }     from "./captureInput.js";
 import { resolveHit }       from "./resolveHit.js";
 import { routeInput }       from "./routeInput.js";
-import { renderFrame }      from "./render.js";
+import { renderFrame }      from "./render/render.js";
 import { reactionFeedback } from "./reactionFeedback.js";
 import { Planner }         from "../UI_Elements/layout/Planner.js";
-import { GenerateButton }         from "../UI_Elements/cards/Button.js";
+import { AuthModal } from "../UI_Elements/overlays/authModal.js";
 import { ExportButton }           from "../UI_Elements/cards/ExportButton.js";
 // import { TestTransitionButton } from "../UI_Elements/cards/TestTransitionButton.js";  // keep for future dev use
 import { commands }         from "./commands.js";
@@ -18,12 +18,14 @@ export const UI_ELEMENTS = {
   planner:     null,
   button:       null,
   exportButton: null,
+  authModal:    null,
 };
-
+window.UI_ELEMENTS = UI_ELEMENTS;
 // ─────────────────────────────────────────────────────────────────────────────
 // initUI  — called once from boot after appState is ready
 // ─────────────────────────────────────────────────────────────────────────────
-export function initUI() {
+export function initUI() {console.log("INIT UI RUNNING");
+  UI_ELEMENTS.authModal  = new AuthModal(); // Initialize authModal before planner to ensure it's available in routeInput
   UI_ELEMENTS.planner     = new Planner(R.appState, commands);
   UI_ELEMENTS.button       = null;//new GenerateButton(commands.generate.bind(commands));
   UI_ELEMENTS.exportButton = new ExportButton();

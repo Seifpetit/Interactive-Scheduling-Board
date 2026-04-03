@@ -1,4 +1,5 @@
 import { R } from "../../core/runtime.js";
+import { renderMaterial } from "../../core/render/materials/materialRenderer.js";
 
 export class GenerateButton {
   constructor(command) { 

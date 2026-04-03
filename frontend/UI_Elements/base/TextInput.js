@@ -11,6 +11,7 @@ export class TextInput {
 
     this.placeholder = opts.placeholder ?? "Enter value…";
     this.numeric     = opts.numeric     ?? false;
+    this.type = opts.type ?? (this.numeric ? "number" : "text");
 
     this.focused     = false;
     this.isHovered   = false;
@@ -30,7 +31,7 @@ export class TextInput {
 
   _createDOM() {
     const el = document.createElement("input");
-    el.type        = this.numeric ? "number" : "text";
+    el.type = this.type;
     el.placeholder = this.placeholder;
 
     Object.assign(el.style, {
@@ -46,6 +47,7 @@ export class TextInput {
       boxSizing:       "border-box",
       caretColor:      "#0dc3aa",
       display:         "none",         // hidden until focused
+      pointerEvents: "none",   // 🔥 ADD THIS
     });
 
     // Enter → submit, Escape → cancel
@@ -94,12 +96,16 @@ export class TextInput {
 
   focus(canvas) {
     if (canvas) this._canvas = canvas;
+
     if (!this._el) return;
+
+    
 
     // Reposition before showing
     if (this._canvas) this.setGeometry(this.x, this.y, this.w, this.h, this._canvas);
 
     this._el.style.display = "block";
+    this._el.style.pointerEvents = "auto";
     this.focused = true;
     // rAF ensures the element is visible before focus — fixes re-focus after cancel
     requestAnimationFrame(() => {
@@ -114,6 +120,7 @@ export class TextInput {
     this._el?.blur();
     this.focused = false;
     if (this._el) this._el.style.display = "none";
+    if (this._el) this._el.style.pointerEvents = "none";
   }
 
   clear() {

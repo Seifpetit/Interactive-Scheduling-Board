@@ -1,5 +1,6 @@
 import { UINode } from "../base/UINode.js";
 import { R }      from "../../core/runtime.js";
+import { renderMaterial } from "../../core/render/materials/materialRenderer.js";
 
 const CATEGORY_COLORS = {
   study:   "#4a90d9",
@@ -139,22 +140,31 @@ export class HourSlot extends UINode {
     const owned = this._getOwningPlacement();
     const drag  = R.interaction.drag;
 
+    // ─────────────────────────────
+    // 1️⃣ CONTINUATION SLOT (not start of block)
+    // ─────────────────────────────
     if (owned && !owned.isStart) {
       const color = CATEGORY_COLORS[owned.task?.category] ?? CATEGORY_COLORS.other;
+
       g.push();
-      g.fill(color + "30");
-      g.noStroke();
-      g.rect(this.x, this.y, this.w, this.h, 4);
+      g.translate(this.x + this.w / 2, this.y + this.h / 2);
+
+
+
       g.pop();
       return;
     }
 
     g.push();
 
-    const isBeingDragged = drag.active &&
-                           drag.kind === "placedTask" &&
-                           drag.fromSlotId === this.slotId;
+    const isBeingDragged =
+      drag.active &&
+      drag.kind === "placedTask" &&
+      drag.fromSlotId === this.slotId;
 
+    // ─────────────────────────────
+    // 2️⃣ PLACED TASK (START SLOT)
+    // ─────────────────────────────
     if (owned && owned.isStart) {
       const { task, placement } = owned;
       const duration = getEffectiveDuration(placement, task);
@@ -162,78 +172,117 @@ export class HourSlot extends UINode {
       const color    = CATEGORY_COLORS[task?.category] ?? CATEGORY_COLORS.other;
       const hovMatch = R.interaction.hoveredTaskId === placement.taskId;
 
-      g.fill(isBeingDragged ? color + "44" : color);
-      g.noStroke();
-      g.rect(this.x, this.y, this.w, this.h, 6, 6, 0, 0);
+      // 🔥 MATERIAL (task surface)
+      g.push();
+      g.translate(this.x + this.w / 2, this.y + this.h / 2);
 
+    
+
+      g.pop();
+
+      // ─────────────────────────────
+      // CONTENT LAYER (text, icons)
+      // ─────────────────────────────
       if (!isBeingDragged) {
         g.fill("#fff");
         g.textSize(13);
         g.textAlign(g.LEFT, g.CENTER);
+
         const font = R.assets?.fonts?.["Bold"];
         if (font) g.textFont(font);
+
         g.text(task.name, this.x + 8, this.y + this.h / 2 - 2);
-        g.noStroke();
 
         g.fill("#ffffff88");
         g.textSize(11);
+        g.textAlign(g.RIGHT, g.CENTER);
+
         const font2 = R.assets?.fonts?.["Italic"];
         if (font2) g.textFont(font2);
-        g.textAlign(g.RIGHT, g.CENTER);
+
         g.text(`${duration}h`, this.x + this.w - 8, this.y + this.h / 2 - 2);
 
+        // ─────────────────────────────
+        // INTERACTION LAYER (hover highlight)
+        // ─────────────────────────────
         if (hovMatch) {
           g.push();
+
           g.noFill();
           g.stroke(color + "88");
           g.strokeWeight(6);
           g.rect(this.x - 1, this.y - 1, this.w + 2, blockH + 2, 8);
+
           g.stroke(color);
           g.strokeWeight(2);
           g.rect(this.x, this.y, this.w, blockH, 6);
+
           g.noStroke();
           g.fill(color + "cc");
           g.rect(this.x, this.y, this.w, 3, 3, 3, 0, 0);
+
           g.pop();
         }
 
+        // ─────────────────────────────
+        // VALIDATION HIGHLIGHT
+        // ─────────────────────────────
         if (this.highlight) {
-          const rc = this.highlightState === "error" ? "#e2621d" : "#27ae60";
+          const rc =
+            this.highlightState === "error"
+              ? "#e2621d"
+              : "#27ae60";
+
           g.push();
+
           g.noFill();
-          g.stroke(rc + "aa"); g.strokeWeight(6);
+          g.stroke(rc + "aa");
+          g.strokeWeight(6);
           g.rect(this.x - 1, this.y - 1, this.w + 2, blockH + 2, 8);
-          g.stroke(rc); g.strokeWeight(2);
+
+          g.stroke(rc);
+          g.strokeWeight(2);
           g.rect(this.x, this.y, this.w, blockH, 6);
+
           g.pop();
         }
       }
 
+    // ─────────────────────────────
+    // 3️⃣ EMPTY SLOT
+    // ─────────────────────────────
     } else {
-      const isError = this.highlightState === "error";
+      const isError   = this.highlightState === "error";
       const isWarning = this.highlightState === "warning";
 
-      if (this.highlight) {
-        g.fill(
-          isError ? "#e2621d18" :
-          isWarning ? "#f5a62318" :
-          "#27ae6018"
-        );
-        g.stroke(
-          isError ? "#e2621d" :
-          isWarning ? "#f5a623" :
-          "#27ae60"
-        );
-        g.strokeWeight(isError ? 2 : 1.5);
-      } else {
-        g.fill("#1e1e2e");
-        g.stroke("#2a2a3e");
-        g.strokeWeight(1);
-      }
+      g.push();
+      g.translate(this.x + this.w / 2, this.y + this.h / 2);
+
+      g.pop();
+
+      // ─────────────────────────────
+      // INTERACTION LAYER (border)
+      // ─────────────────────────────
+      g.stroke(
+        this.highlight
+          ? isError
+            ? "#e2621d"
+            : isWarning
+            ? "#f5a623"
+            : "#27ae60"
+          : "#2a2a3e"
+      );
+
+      g.strokeWeight(this.highlight ? 2 : 1);
+      g.noFill();
       g.rect(this.x, this.y, this.w, this.h, 6);
     }
 
+    // ─────────────────────────────
+    // GLOBAL INTERACTION (pulse)
+    // ─────────────────────────────
     if (this.highlight) this._drawPulse(g);
+
     this.highlight = false;
 
     g.pop();

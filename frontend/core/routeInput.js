@@ -5,6 +5,23 @@ import { getDragVerdict } from "./validator.js";
 
 export function routeInput() {
   if (R.transition.phase !== "READY") return;
+  if (R.modal.open && R.modal.type === "auth") {
+    const modal = UI_ELEMENTS.authModal;
+    const mouse = R.input.mouse;
+    const kb = R.input.keyboard;
+
+    // CLICK
+    if (R.interaction.click === "single") {
+      modal?.handleClick(mouse.x, mouse.y);
+    }
+
+    // KEYBOARD
+    if (kb.justPressed) {
+      modal?.handleInput(kb.key);
+    }
+
+    return; // 🔥 BLOCK EVERYTHING ELSE
+  }
 
   const { hovered, click, released } = R.interaction;
   const mouse = R.input.mouse;

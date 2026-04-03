@@ -82,11 +82,26 @@ export class TaskTray extends UINode {
   // ─────────────────────────────
 
   _buildCards() {
-    // keep addBtn, rebuild card children
     this.children = [];
+
     for (const task of this.tasks) {
-      this.children.push(new TaskCard(task));
+      const card = new TaskCard(task);
+
+      // 🧊 MATERIAL ASSIGNMENT
+      // Start simple: all glass
+      card.material = "solid";
+
+      // OPTIONAL: category-based materials (uncomment later)
+      
+      if (task.category === "work")   card.material = "glass";
+      if (task.category === "study")  card.material = "frost";
+      if (task.category === "gym")    card.material = "glow";
+      if (task.category === "social") card.material = "tint";
+      
+      card.parent = this;
+      this.children.push(card);
     }
+
     this.children.push(this.addBtn);
   }
 

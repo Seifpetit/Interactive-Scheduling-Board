@@ -1,35 +1,50 @@
 import { R } from "./runtime.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// loadState
-// Called once at boot by boot.js.
-// Fetches /state from FastAPI, populates R.appState with tasks + placements.
-// Returns the state object so boot.js can proceed.
-// ─────────────────────────────────────────────────────────────────────────────
-
 export async function loadState(setProgress) {
-  // initialise with empty defaults so the UI never crashes on null
-  R.appState = {
-    tasks:      [],
-    placements: {},
-  };
+  let token = R.auth?.token || localStorage.getItem("planner_token");
 
-  setProgress(0.4);
-  try {
-    const res  = await fetch("/state");
-    if (!res.ok) throw new Error(`/state returned ${res.status}`);
-    const data = await res.json();
+  // sync runtime
+  if (token) R.auth.token = token;
 
-    R.appState.tasks      = data.tasks      ?? [];
-    R.appState.placements = data.placements ?? {};
-
-    console.log(`[loadState] loaded ${R.appState.tasks.length} tasks, ${Object.keys(R.appState.placements).length} placements`);
-    
-   
-  } catch (err) {
-    console.warn("[loadState] failed to load from backend — starting empty:", err);
-    // app still works, just with no data
+  if (!token) {
+    R.openModal("auth", { mode: "login" });
+    return null;
   }
-   setProgress(0.6); 
-  return R.appState;
+
+  setProgress?.(0.25);
+
+  try {
+    const res = await fetch("/state", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    // 🔴 AUTH FAIL → open modal + stop
+    if (res.status === 401) {
+      R.auth.token = null;
+      localStorage.removeItem("planner_token");
+
+      R.openModal("auth", { mode: "login" });
+      return null;
+    }
+
+    setProgress?.(0.7);
+
+    const state = await res.json();
+
+    console.log(
+      `[loadState] loaded ${state.tasks?.length ?? 0} tasks, ${
+        Object.keys(state.placements ?? {}).length
+      } placements`
+    );
+
+    setProgress?.(1.0);
+
+    return state;
+
+  } catch (e) {
+    console.error("[loadState] failed", e);
+    return null;
+  }
 }

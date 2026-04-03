@@ -7,6 +7,8 @@ import { Toaster }               from "../overlays/Toaster.js";
 import { getDragVerdict }        from "../../core/validator.js";
 import { updateCoachFeedback } from "../../core/coachFeedback.js";
 import { R }                     from "../../core/runtime.js";
+import { renderMaterial } from "../../core/render/materials/materialRenderer.js";
+import { AuthModal } from "../overlays/authModal.js";
 
 class WeekNavButton extends UINode {
   constructor(label, onClick) {
@@ -22,6 +24,8 @@ class WeekNavButton extends UINode {
   update(mouse) {
     if (!this.visible) return;
     this.isHovered = this.contains(mouse.x, mouse.y);
+    const target = this.isHovered ? 0.5 : 0;
+      this.updateMaterial(target);
 
     const pressedNow = mouse.justPressed && this.isHovered && !R.interaction.drag.active;
     if (pressedNow && !this._pressedLastFrame) {
@@ -34,22 +38,45 @@ class WeekNavButton extends UINode {
     if (!this.visible) return;
 
     g.push();
-    g.noStroke();
-    g.fill(this.isHovered ? "#4a90d930" : "#1a1a2e");
-    g.rect(this.x, this.y, this.w, this.h, 10);
+
+    // ─────────────────────────────
+    // 1️⃣ MATERIAL LAYER (background)
+    // ─────────────────────────────
+    g.translate(this.x + this.w / 2, this.y + this.h / 2);
+      renderMaterial(g, {
+        ...this,
+        x: this.dragging ? this.dragX : this.x,
+        y: this.dragging ? this.dragY : this.y,
+        w: this.w,
+        h: this.h,
+        color: "#2a2a4a"
+      });
+    g.pop();
+
+    // ─────────────────────────────
+    // 2️⃣ BORDER (interaction layer)
+    // ─────────────────────────────
+    g.push();
 
     g.stroke(this.isHovered ? "#4a90d9" : "#2a2a4a");
     g.strokeWeight(1.5);
     g.noFill();
     g.rect(this.x, this.y, this.w, this.h, 10);
 
+    // ─────────────────────────────
+    // 3️⃣ CONTENT (text)
+    // ─────────────────────────────
     g.noStroke();
     g.fill(this.isHovered ? "#ffffff" : "#8888aa");
+
     g.textAlign(g.CENTER, g.CENTER);
     g.textSize(18);
+
     const font = R.assets?.fonts?.["Bold"];
     if (font) g.textFont(font);
+
     g.text(this.label, this.x + this.w / 2, this.y + this.h / 2 - 1);
+
     g.pop();
 
     this.isHovered = false;
@@ -89,6 +116,7 @@ export class Planner extends UINode {
     this.todayBtn    = new WeekNavButton("Today", () => this.commands.recenterWeek());
     this.nextBtn     = new WeekNavButton("=>", () => this.commands.nextWeek());
     this.contextMenu = new ContextMenuController(commands);
+    this.authModal   = new AuthModal();
     this.toaster     = new Toaster();
 
     R.toast = (message, type = "info", mode = "timed") => {
@@ -123,6 +151,11 @@ export class Planner extends UINode {
 
   update(p5, mouse) {
     if (!this.visible) return;
+    if (R.modal.open && R.modal.type === "auth") {
+      this.authModal.visible = true;
+    } else {
+      this.authModal.visible = false;
+    }
 
     this.setGeometry(20, 20, p5.width - 40, p5.height - 40);
 
@@ -135,32 +168,36 @@ export class Planner extends UINode {
     }
 
     const drag = R.interaction.drag;
-    if (drag.active && (drag.kind === "taskCard" || drag.kind === "placedTask")) {
 
-      const cx = drag.kind === "taskCard"
-        ? drag.card.getDragX() + drag.card.w / 2
-        : drag.ghostX + drag.ghostW / 2;
+    if (drag.active) {
 
-      const cy = drag.kind === "taskCard"
-        ? drag.card.getDragY() + drag.card.h / 2
-        : drag.ghostY + drag.ghostH * 0.1;
+      const targetX = drag.kind === "taskCard"
+        ? drag.card.getDragX()
+        : drag.ghostX;
 
-      const nearest = this.grid.findNearestSlot(cx, cy);
-      drag._nearestSlot = nearest;
+      const targetY = drag.kind === "taskCard"
+        ? drag.card.getDragY()
+        : drag.ghostY;
 
-      const duration = drag.kind === "taskCard"
-        ? (drag.card.task.duration ?? 1)
-        : (drag.customDuration ?? drag.task?.duration ?? 1);
-
-      const blockSlots = new Set();
+      const nearest = drag._nearestSlot;
 
       if (nearest) {
-        const day = this.grid.days[nearest.dayIndex];
-        if (day) {
-          const startIndex = day.slots.findIndex(s => s.slotId === nearest.slotId);
-          for (let i = 0; i < duration; i++) {
-            const slot = day.slots[startIndex + i];
-            if (slot) blockSlots.add(slot);
+        const center = nearest.getCenter();
+
+        const dx = center.x - targetX;
+        const dy = center.y - targetY;
+
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        if (dist < drag.magnet.radius) {
+          const force = (1 - dist / drag.magnet.radius) * drag.magnet.strength;
+
+          if (drag.kind === "taskCard") {
+            drag.card.dragX += dx * force;
+            drag.card.dragY += dy * force;
+          } else {
+            drag.ghostX += dx * force;
+            drag.ghostY += dy * force;
           }
         }
       }
@@ -180,7 +217,28 @@ export class Planner extends UINode {
       if (verdict?.code !== "DAY_OVERFLOW") {
         drag._overflowToastFired = false;
       }
+      // ─────────────────────────────
+      // Compute blockSlots (correct variable)
+      // ─────────────────────────────
+      const blockSlots = new Set();
 
+      if (nearest) {
+        const duration =
+          drag.kind === "taskCard"
+            ? drag.card?.task?.duration ?? 1
+            : drag.customDuration ?? drag.task?.duration ?? 1;
+
+        const day = this.grid.days[nearest.dayIndex];
+
+        if (day) {
+          const startIndex = day.slots.findIndex(s => s.slotId === nearest.slotId);
+
+          for (let i = 0; i < duration; i++) {
+            const slot = day.slots[startIndex + i];
+            if (slot) blockSlots.add(slot);
+          }
+        }
+      }
       for (const day of this.grid.days) {
         for (const slot of day.slots) {
           const isSource = drag.kind === "placedTask" && slot.slotId === drag.fromSlotId;
@@ -255,6 +313,8 @@ export class Planner extends UINode {
     this.tray.renderOverlay(gOverlay);
 
     this.contextMenu.render(gOverlay);
+
+    this.authModal.render(gOverlay);
 
     this.toaster.render(gOverlay);
   }
