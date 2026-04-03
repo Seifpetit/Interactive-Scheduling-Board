@@ -32,7 +32,7 @@ export class TextInput {
   _createDOM() {
     const el = document.createElement("input");
     el.type = this.type;
-    el.placeholder = this.placeholder;
+    //el.placeholder = this.placeholder;
 
     Object.assign(el.style, {
       position:        "fixed",
