@@ -306,7 +306,7 @@ new window.p5(p5 => {
   // ─────────────────────────────────────────
   window.addEventListener("retry_load", async () => {
     console.log("[auth] retrying state load...");
-    await loadState();
+    initState();
   });
   // ─────────────────────────────────────────
   // WINDOW RESIZE

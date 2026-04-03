@@ -47,7 +47,7 @@ export class TextInput {
       boxSizing:       "border-box",
       caretColor:      "#0dc3aa",
       display:         "none",         // hidden until focused
-      pointerEvents: "none",   // 🔥 ADD THIS
+
     });
 
     // Enter → submit, Escape → cancel
@@ -94,20 +94,33 @@ export class TextInput {
 
   get value() { return this._el?.value ?? ""; }
 
-  focus(canvas) {
-    if (canvas) this._canvas = canvas;
-
+  
+  hide() {
     if (!this._el) return;
+    this._el.style.display = "none";
+    this._el.style.pointerEvents = "none";
+    this.focused = false;
+  }
 
-    
-
-    // Reposition before showing
+  show(canvas) {
+    if (canvas) this._canvas = canvas;
     if (this._canvas) this.setGeometry(this.x, this.y, this.w, this.h, this._canvas);
-
     this._el.style.display = "block";
     this._el.style.pointerEvents = "auto";
+  }
+
+  focus(canvas) {
+    if (canvas) this._canvas = canvas;
+    if (!this._el) return;
+
+    if (this._canvas) {
+      this.setGeometry(this.x, this.y, this.w, this.h, this._canvas);
+    }
+
+    this._el.style.display = "block";      // visible
+    this._el.style.pointerEvents = "auto";
     this.focused = true;
-    // rAF ensures the element is visible before focus — fixes re-focus after cancel
+
     requestAnimationFrame(() => {
       if (this._el && this.focused) {
         this._el.focus();
@@ -117,10 +130,16 @@ export class TextInput {
   }
 
   blur() {
-    this._el?.blur();
+    if (!this._el) return;
+
+    this._el.blur();
     this.focused = false;
-    if (this._el) this._el.style.display = "none";
-    if (this._el) this._el.style.pointerEvents = "none";
+
+    // Hide the DOM element so it doesn't ghost over the canvas.
+    // The p5 render() method draws the value as text when unfocused,
+    // so the user still sees what they typed.
+    this._el.style.display = "none";
+    this._el.style.pointerEvents = "none";
   }
 
   clear() {
@@ -161,14 +180,24 @@ export class TextInput {
     g.rect(this.x, this.y, this.w, this.h, 4);
     g.pop();
 
-    // When not focused, draw placeholder text inside the p5 box
-    if (!this.focused && this.value === "") {
+    // When not focused, draw placeholder or typed value in p5
+    if (!this.focused) {
       g.push();
       g.noStroke();
-      g.fill("#ffffff45");
       g.textSize(14);
       g.textAlign(g.LEFT, g.CENTER);
-      //g.text(this.placeholder, this.x + 8, this.y + this.h / 2 + 2);
+      if (this.value === "") {
+        // placeholder
+        g.fill("#ffffff45");
+        g.text(this.placeholder, this.x + 8, this.y + this.h / 2 + 2);
+      } else {
+        // show typed value (mask with dots if password type)
+        g.fill("#ffffff");
+        const display = this.type === "password"
+          ? "•".repeat(this.value.length)
+          : this.value;
+        g.text(display, this.x + 8, this.y + this.h / 2 + 2);
+      }
       g.pop();
     }
 

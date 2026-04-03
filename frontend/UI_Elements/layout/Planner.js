@@ -8,7 +8,7 @@ import { getDragVerdict }        from "../../core/validator.js";
 import { updateCoachFeedback } from "../../core/coachFeedback.js";
 import { R }                     from "../../core/runtime.js";
 import { renderMaterial } from "../../core/render/materials/materialRenderer.js";
-import { AuthModal } from "../overlays/authModal.js";
+import { AuthModal } from "../overlays/auth/authModal.js";
 
 class WeekNavButton extends UINode {
   constructor(label, onClick) {
@@ -27,11 +27,9 @@ class WeekNavButton extends UINode {
     const target = this.isHovered ? 0.5 : 0;
       this.updateMaterial(target);
 
-    const pressedNow = mouse.justPressed && this.isHovered && !R.interaction.drag.active;
-    if (pressedNow && !this._pressedLastFrame) {
+    if (mouse.justPressed && this.isHovered && !R.interaction.drag.active) {
       this.onClick?.();
     }
-    this._pressedLastFrame = pressedNow;
   }
 
   render(g) {
@@ -49,7 +47,7 @@ class WeekNavButton extends UINode {
         y: this.dragging ? this.dragY : this.y,
         w: this.w,
         h: this.h,
-        color: "#2a2a4a"
+        color: this.label === "Logout" ? "#f67e7a" : "#2a2a4a"
       });
     g.pop();
 
@@ -59,6 +57,9 @@ class WeekNavButton extends UINode {
     g.push();
 
     g.stroke(this.isHovered ? "#4a90d9" : "#2a2a4a");
+    if (this.label === "Logout") {
+      g.stroke(this.isHovered ? "#d9534f" : "#a43e3a");
+    }
     g.strokeWeight(1.5);
     g.noFill();
     g.rect(this.x, this.y, this.w, this.h, 10);
@@ -68,7 +69,9 @@ class WeekNavButton extends UINode {
     // ─────────────────────────────
     g.noStroke();
     g.fill(this.isHovered ? "#ffffff" : "#8888aa");
-
+    if (this.label === "Logout") {
+      g.fill(this.isHovered ? "#ffffff" : "#000000");
+    }
     g.textAlign(g.CENTER, g.CENTER);
     g.textSize(18);
 
@@ -112,9 +115,12 @@ export class Planner extends UINode {
 
     this.tray        = new TaskTray(state.tasks || [], commands);
     this.grid        = new WeekGrid();
+
     this.prevBtn     = new WeekNavButton("<=", () => this.commands.prevWeek());
     this.todayBtn    = new WeekNavButton("Today", () => this.commands.recenterWeek());
     this.nextBtn     = new WeekNavButton("=>", () => this.commands.nextWeek());
+    this.logoutBtn   = new WeekNavButton("Logout", () => this.commands.logout());
+
     this.contextMenu = new ContextMenuController(commands);
     this.authModal   = new AuthModal();
     this.toaster     = new Toaster();
@@ -123,7 +129,14 @@ export class Planner extends UINode {
       this.toaster.add(message, type, mode);
     };
 
-    this.children = [this.grid, this.tray, this.prevBtn, this.todayBtn, this.nextBtn];
+    this.children = [
+      this.grid, 
+      this.tray, 
+      this.prevBtn, 
+      this.todayBtn, 
+      this.nextBtn, 
+      this.logoutBtn,
+    ];
 
     this._lastOverflow = false;
   }
@@ -140,6 +153,7 @@ export class Planner extends UINode {
     const btnH       = 30;
     const btnY       = this.y + pad + 4;
     const todayW     = 74;
+    const logoutW    = 80;
 
     this.tray.setGeometry(this.x + pad, contentY, trayW, contentH);
     this.grid.setGeometry(gridX, contentY, gridW, contentH);
@@ -147,6 +161,14 @@ export class Planner extends UINode {
     this.prevBtn.setGeometry(gridX, btnY, btnW, btnH);
     this.todayBtn.setGeometry(gridX + (gridW - todayW) / 4, btnY, todayW, btnH);
     this.nextBtn.setGeometry(gridX + gridW - btnW, btnY, btnW, btnH);
+
+    this.logoutBtn.setGeometry(
+      this.x + this.w - pad - logoutW - this.w / 8,  // right side
+      btnY,
+      logoutW,
+      btnH
+    );
+
   }
 
   update(p5, mouse) {
@@ -162,6 +184,7 @@ export class Planner extends UINode {
     this.prevBtn.update(mouse);
     this.todayBtn.update(mouse);
     this.nextBtn.update(mouse);
+    this.logoutBtn.update(mouse);
 
     if (this.tray.contains(mouse.x, mouse.y) && !R.interaction.drag.active) {
       if (mouse.wheelDelta !== 0) this.tray.scroll(mouse.wheelDelta);
@@ -299,6 +322,8 @@ export class Planner extends UINode {
     this.prevBtn.render(gMain);
     this.todayBtn.render(gMain);
     this.nextBtn.render(gMain);
+    this.logoutBtn.render(gMain);
+
     this.grid.render(gMain);
 
     const activeCard = R.interaction.drag.kind === "taskCard"

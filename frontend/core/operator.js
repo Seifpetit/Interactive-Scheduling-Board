@@ -5,9 +5,9 @@ import { resolveHit }       from "./resolveHit.js";
 import { routeInput }       from "./routeInput.js";
 import { renderFrame }      from "./render/render.js";
 import { reactionFeedback } from "./reactionFeedback.js";
-import { Planner }         from "../UI_Elements/layout/Planner.js";
-import { AuthModal } from "../UI_Elements/overlays/authModal.js";
-import { ExportButton }           from "../UI_Elements/cards/ExportButton.js";
+import { Planner }          from "../UI_Elements/layout/Planner.js";
+import { AuthModal }        from "../UI_Elements/overlays/auth/authModal.js";
+import { ExportButton }     from "../UI_Elements/cards/ExportButton.js";
 // import { TestTransitionButton } from "../UI_Elements/cards/TestTransitionButton.js";  // keep for future dev use
 import { commands }         from "./commands.js";
 

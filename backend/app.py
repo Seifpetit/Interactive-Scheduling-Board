@@ -215,6 +215,33 @@ def create_task(request: Request, body: Dict[str, Any]):
     return {"ok": True}
 
 
+@app.patch("/tasks/{task_id}")
+def update_task(request: Request, task_id: str, body: Dict[str, Any]):
+    user_id = get_current_user_id(request)
+
+    # Only allow updating these specific fields — nothing else can sneak in
+    allowed = {"name", "duration", "energy", "category"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+
+    if not updates:
+        raise HTTPException(400, "Nothing to update")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    for key, val in updates.items():
+        cur.execute(
+            q(conn, f"UPDATE tasks SET {key}=%s WHERE id=%s AND user_id=%s"),
+            (val, task_id, user_id)
+        )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"ok": True}
+
+
 @app.delete("/tasks/{task_id}")
 def delete_task(request: Request, task_id: str):
     user_id = get_current_user_id(request)
@@ -247,17 +274,56 @@ def create_placement(request: Request, body: Dict[str, Any]):
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute(q(conn,
-        """
-        INSERT INTO placements (slot_id, task_id, custom_duration, user_id)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (slot_id) DO UPDATE SET
-            task_id = EXCLUDED.task_id,
-            custom_duration = EXCLUDED.custom_duration
-        """
-    ), (slot_id, task_id, custom, user_id))
+    # FIX: SQLite doesn't support `ON CONFLICT ... DO UPDATE SET EXCLUDED.*`
+    # That's Postgres-only syntax. SQLite uses INSERT OR REPLACE instead,
+    # which deletes the old row and inserts a fresh one — same end result
+    # for our use case since we always supply all columns.
+    if is_sqlite(conn):
+        cur.execute(
+            "INSERT OR REPLACE INTO placements (slot_id, task_id, custom_duration, user_id) VALUES (?, ?, ?, ?)",
+            (slot_id, task_id, custom, user_id)
+        )
+    else:
+        cur.execute(
+            """
+            INSERT INTO placements (slot_id, task_id, custom_duration, user_id)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (slot_id) DO UPDATE SET
+                task_id         = EXCLUDED.task_id,
+                custom_duration = EXCLUDED.custom_duration
+            """,
+            (slot_id, task_id, custom, user_id)
+        )
 
     conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"ok": True}
+
+
+@app.patch("/placements/{slot_id}")
+def update_placement(request: Request, slot_id: str, body: Dict[str, Any]):
+    user_id = get_current_user_id(request)
+
+    # FIX: frontend calls PATCH /placements/:slotId to update customDuration,
+    # but this route didn't exist at all — every duration change was silently lost.
+    custom = body.get("customDuration")
+
+    if custom is None:
+        raise HTTPException(400, "customDuration required")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute(
+        q(conn, "UPDATE placements SET custom_duration=%s WHERE slot_id=%s AND user_id=%s"),
+        (custom, slot_id, user_id)
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
     return {"ok": True}
 

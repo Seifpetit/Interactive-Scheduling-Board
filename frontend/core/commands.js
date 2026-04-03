@@ -63,6 +63,19 @@ function _shiftWeek(days) {
 
 export const commands = {
 
+  
+  // ═══════════════════════════════════════
+  // AUTH COMMANDS
+  // ═══════════════════════════════════════
+
+  logout() {
+    localStorage.removeItem("planner_token");
+    R.auth.token = null;
+
+    // reopen auth modal
+    R.openModal("auth", { mode: "login" });
+  },
+
   // ═══════════════════════════════════════
   // CALENDAR
   // ═══════════════════════════════════════
@@ -206,7 +219,11 @@ export const commands = {
     if (to) placements[fromSlotId] = to;
     else delete placements[fromSlotId];
 
-    _post("/placements/move", { fromSlotId, toSlotId });
+    _post("/placements", {
+      slotId: toSlotId,
+      taskId: from.taskId,
+      customDuration: from.customDuration ?? null
+    });
     return true;
   },
 

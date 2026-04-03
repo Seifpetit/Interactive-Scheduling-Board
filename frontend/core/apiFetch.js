@@ -1,19 +1,15 @@
-export async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("planner_token");
+import { R } from "./runtime.js";
 
-  const res = await fetch(url, {
-    ...options,
+export async function apiFetch(path, options = {}) {
+  const token = R.auth?.token;
+
+  const res = await fetch(`http://127.0.0.1:8000${path}`, {
     headers: {
-      ...(options.headers || {}),
-      Authorization: token ? "Bearer " + token : undefined,
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+    ...options,
   });
 
-  if (res.status === 401) {
-    // 🔥 key change
-    window.dispatchEvent(new Event("auth_required"));
-    throw new Error("Unauthorized");
-  }
-
-  return res.json();
+  return res; // 🔥 RETURN REAL RESPONSE
 }
