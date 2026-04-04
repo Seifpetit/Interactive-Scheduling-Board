@@ -79,9 +79,33 @@ function _onHover({ type, node }, mouse) {
 
   // highlight drop target while any drag is active
   if (R.interaction.drag.active &&
-     (type === "hourSlot" || type === "placedTask")) {
-    node.highlight = true;
-    if (!node.pulseTriggered) node.triggerPulse();
+    (type === "hourSlot" || type === "placedTask")) {
+    
+    const drag = R.interaction.drag;
+    const duration = drag.customDuration ?? drag.task?.duration ?? 1;
+    
+    // find the slot that aligns with the ghost top, not the mouse
+    const grid = UI_ELEMENTS.planner?.grid;
+    const ghostTopY = drag.kind === "placedTask"
+      ? drag.ghostY 
+      : mouse.y;
+    const anchorSlot = grid?.findNearestSlot(mouse.x, ghostTopY) ?? node;
+
+    const slots = anchorSlot._columnSlots;
+
+    if (slots) {
+      const startIndex = slots.indexOf(anchorSlot);
+      for (let i = 0; i < duration; i++) {
+        const s = slots[startIndex + i];
+        if (s) {
+          s.highlight = true;
+          if (!s.pulseTriggered) s.triggerPulse();
+        }
+      }
+    } else {
+      anchorSlot.highlight = true;
+      if (!anchorSlot.pulseTriggered) anchorSlot.triggerPulse();
+    }
   }
 }
 
