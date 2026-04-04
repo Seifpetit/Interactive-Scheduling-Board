@@ -2,9 +2,12 @@ import { R } from "./runtime.js";
 
 export async function loadState(setProgress) {
   let token = R.auth?.token || localStorage.getItem("planner_token");
-
+  
   // sync runtime
-  if (token) R.auth.token = token;
+  if (token){
+    R.auth.token = token;
+    R.auth.email = localStorage.getItem("planner_email");
+  } 
 
   if (!token) {
     R.openModal("auth", { mode: "login" });

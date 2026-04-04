@@ -134,6 +134,8 @@ export class AuthModal extends UINode {
 
       localStorage.setItem("planner_token", data.token);
       R.auth.token = data.token;
+      R.auth.email = this.emailInput.value;  // ← add this
+      localStorage.setItem("planner_email", this.emailInput.value);
 
       this.close();
       window.dispatchEvent(new Event("retry_load"));

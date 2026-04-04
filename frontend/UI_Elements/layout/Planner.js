@@ -17,6 +17,7 @@ class WeekNavButton extends UINode {
     this.onClick = onClick;
     this.isHovered = false;
     this._pressedLastFrame = false;
+    this.isUserBtn = false;
   }
 
   layout() {}
@@ -47,7 +48,9 @@ class WeekNavButton extends UINode {
         y: this.dragging ? this.dragY : this.y,
         w: this.w,
         h: this.h,
-        color: this.label === "Logout" ? "#f67e7a" : "#2a2a4a"
+        color: this.label === "Logout" ? "#f67e7a" 
+             : this.isUserBtn ? "#405048"   // light green
+             : "#2a2a4a"
       });
     g.pop();
 
@@ -60,6 +63,11 @@ class WeekNavButton extends UINode {
     if (this.label === "Logout") {
       g.stroke(this.isHovered ? "#d9534f" : "#a43e3a");
     }
+
+    if (this.isUserBtn) {
+      g.stroke(this.isHovered ? "#6ddc9f" : "#3e4542");
+    }
+    
     g.strokeWeight(1.5);
     g.noFill();
     g.rect(this.x, this.y, this.w, this.h, 10);
@@ -69,9 +77,14 @@ class WeekNavButton extends UINode {
     // ─────────────────────────────
     g.noStroke();
     g.fill(this.isHovered ? "#ffffff" : "#8888aa");
+
     if (this.label === "Logout") {
       g.fill(this.isHovered ? "#ffffff" : "#000000");
     }
+    if (this.isUserBtn) {
+      g.fill(this.isHovered ? "#ffffff" : "#42dd90");
+    }
+
     g.textAlign(g.CENTER, g.CENTER);
     g.textSize(18);
 
@@ -120,6 +133,7 @@ export class Planner extends UINode {
     this.todayBtn    = new WeekNavButton("Today", () => this.commands.recenterWeek());
     this.nextBtn     = new WeekNavButton("=>", () => this.commands.nextWeek());
     this.logoutBtn   = new WeekNavButton("Logout", () => this.commands.logout());
+    this.userBtn     = new WeekNavButton("...", () => {});  this.userBtn.isUserBtn = true;
 
     this.contextMenu = new ContextMenuController(commands);
     this.authModal   = new AuthModal();
@@ -153,7 +167,7 @@ export class Planner extends UINode {
     const btnH       = 30;
     const btnY       = this.y + pad + 4;
     const todayW     = 74;
-    const logoutW    = 80;
+    
 
     this.tray.setGeometry(this.x + pad, contentY, trayW, contentH);
     this.grid.setGeometry(gridX, contentY, gridW, contentH);
@@ -162,10 +176,19 @@ export class Planner extends UINode {
     this.todayBtn.setGeometry(gridX + (gridW - todayW) / 4, btnY, todayW, btnH);
     this.nextBtn.setGeometry(gridX + gridW - btnW, btnY, btnW, btnH);
 
+    const logoutW    = 80;
     this.logoutBtn.setGeometry(
       this.x + this.w - pad - logoutW - this.w / 8,  // right side
       btnY,
       logoutW,
+      btnH
+    );
+
+    const userW = 120;
+    this.userBtn.setGeometry(
+      this.x + this.w - pad - logoutW - this.w / 8 - userW - 10,
+      btnY,
+      userW,
       btnH
     );
 
@@ -184,7 +207,10 @@ export class Planner extends UINode {
     this.prevBtn.update(mouse);
     this.todayBtn.update(mouse);
     this.nextBtn.update(mouse);
+
     this.logoutBtn.update(mouse);
+    this.userBtn.label = R.auth?.email ?? "guest";
+    this.userBtn.update(mouse);
 
     if (this.tray.contains(mouse.x, mouse.y) && !R.interaction.drag.active) {
       if (mouse.wheelDelta !== 0) this.tray.scroll(mouse.wheelDelta);
@@ -322,7 +348,9 @@ export class Planner extends UINode {
     this.prevBtn.render(gMain);
     this.todayBtn.render(gMain);
     this.nextBtn.render(gMain);
+
     this.logoutBtn.render(gMain);
+    this.userBtn.render(gMain);
 
     this.grid.render(gMain);
 
