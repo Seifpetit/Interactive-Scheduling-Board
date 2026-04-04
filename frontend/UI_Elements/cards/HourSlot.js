@@ -147,10 +147,11 @@ export class HourSlot extends UINode {
       const color = CATEGORY_COLORS[owned.task?.category] ?? CATEGORY_COLORS.other;
 
       g.push();
-      g.translate(this.x + this.w / 2, this.y + this.h / 2);
-
-
-
+      g.noStroke();
+      g.fill(color + "33");
+      g.rect(this.x, this.y, this.w, this.h, 0);
+      g.fill(color + "99");
+      g.rect(this.x, this.y, 3, this.h, 4);
       g.pop();
       return;
     }
@@ -172,12 +173,15 @@ export class HourSlot extends UINode {
       const color    = CATEGORY_COLORS[task?.category] ?? CATEGORY_COLORS.other;
       const hovMatch = R.interaction.hoveredTaskId === placement.taskId;
 
-      // 🔥 MATERIAL (task surface)
       g.push();
-      g.translate(this.x + this.w / 2, this.y + this.h / 2);
-
-    
-
+      if (isBeingDragged) {
+        g.translate(this.x + this.w / 2, this.y + this.h / 2);
+        
+      } else {
+        g.noStroke();
+        g.fill(color + "aa");
+        g.rect(this.x, this.y, this.w, blockH, 6);
+      }
       g.pop();
 
       // ─────────────────────────────
@@ -255,11 +259,6 @@ export class HourSlot extends UINode {
       const isError   = this.highlightState === "error";
       const isWarning = this.highlightState === "warning";
 
-      g.push();
-      g.translate(this.x + this.w / 2, this.y + this.h / 2);
-
-      g.pop();
-
       // ─────────────────────────────
       // INTERACTION LAYER (border)
       // ─────────────────────────────
@@ -303,19 +302,20 @@ export class HourSlot extends UINode {
     const hw = drag.ghostW / 2;
     const hh = drag.ghostH / 2;
 
+/*
     g.fill(color + "33");
     g.noStroke();
     g.rect(-hw, -hh, drag.ghostW, drag.ghostH, 6);
 
     g.fill(color + "cc");
     g.rect(-hw, -hh, drag.ghostW, slotH, 6, 6, 0, 0);
-
-    if (duration > 1) {
-      g.fill(color + "55");
-      g.rect(-hw, -hh + slotH, drag.ghostW, drag.ghostH - slotH, 0, 0, 6, 6);
-      g.fill(color + "99");
-      g.rect(-hw, -hh + slotH, 3, drag.ghostH - slotH, 4);
-    }
+*/
+    renderMaterial(g, {
+      x: -hw, y: -hh, w: drag.ghostW, h: drag.ghostH,
+      color: color,
+      materialProgress: 1,
+      highlighted: false
+    });
 
     g.fill("#fff");
     g.textSize(13);

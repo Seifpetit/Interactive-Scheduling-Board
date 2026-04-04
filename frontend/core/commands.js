@@ -224,6 +224,7 @@ export const commands = {
       taskId: from.taskId,
       customDuration: from.customDuration ?? null
     });
+    _delete(`/placements/${fromSlotId}`);
     return true;
   },
 
