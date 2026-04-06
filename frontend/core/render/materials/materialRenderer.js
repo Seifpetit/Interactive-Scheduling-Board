@@ -1,4 +1,3 @@
-import { renderGlass } from "./glassMaterial.js";
 import { renderSolid } from "./solidMaterial.js";
 import { renderFocus } from "./renderFocus.js";
 import { renderFrost } from "./renderFrost.js";

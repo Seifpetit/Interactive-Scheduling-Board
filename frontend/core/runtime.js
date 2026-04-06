@@ -122,7 +122,7 @@ export const R = {
   // ─────────────────────────────────────────
   geometry: { window: {}, schedule: {} },
 
-  ui: { root: null },
+  ui: { root: null, view: "planner" },
 
   assets: { fonts: {} },
 

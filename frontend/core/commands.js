@@ -1,6 +1,11 @@
 import { R } from "./runtime.js";
 import { apiFetch } from "./apiFetch.js";
 
+/// This file defines all user-invoked commands, which are called from UI elements or keyboard shortcuts.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 async function _post(path, body) {
   try {
     const res = await apiFetch(path, {
@@ -48,11 +53,9 @@ async function _delete(path) {
   }
 }
 
-
 function _getPlacementDuration(placement, task) {
   return placement?.customDuration ?? task?.duration ?? 1;
 }
-
 
 function _shiftWeek(days) {
   const d = new Date(R.calendar.currentWeekStart);
@@ -61,8 +64,21 @@ function _shiftWeek(days) {
   R.calendar.currentWeekStart = d;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const commands = {
 
+  // ═══════════════════════════════════════
+  // VIEW COMMANDS
+  // ═══════════════════════════════════════
+
+  dataView() {
+    R.ui.view = "data";
+  },
+
+  plannerView() {
+    R.ui.view = "planner";
+  },
   
   // ═══════════════════════════════════════
   // AUTH COMMANDS

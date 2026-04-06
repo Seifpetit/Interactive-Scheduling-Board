@@ -168,7 +168,7 @@ export class AuthModal extends UINode {
 
     // BACKDROP
     g.push();
-    g.fill(0, 180);
+    g.fill(0, 130);
     g.noStroke();
     g.rect(0, 0, W, H);
     g.pop();
