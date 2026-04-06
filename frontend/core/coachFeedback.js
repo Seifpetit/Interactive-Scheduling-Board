@@ -96,71 +96,36 @@ function _askReview(entry) {
   if (_promptLock) return;
   _promptLock = true;
 
-  const title = entry.task.name;
-  const scheduledLabel = `${entry.start.toLocaleString()} → ${entry.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  R.openModal("coach", {
+    entry,
+    onComplete: (answers) => {
+      const outcome = answers.outcome;
 
-  const didIt = window.prompt(
-    `Coach check-in\n\n${title}\n${scheduledLabel}\n\nDid you do it?\nType: yes / partial / no`
-  );
+      if (outcome === "no") {
+        _patchMeta(entry.slotId, {
+          reviewed: true,
+          review: {
+            outcome: "no",
+            why: answers.why ?? "",
+            reviewedAt: new Date().toISOString(),
+          },
+        });
+      } else {
+        _patchMeta(entry.slotId, {
+          reviewed: true,
+          review: {
+            outcome,
+            onTime:        answers.onTime    ?? null,
+            actualMinutes: answers.duration  ?? null,
+            effort:        answers.effort    ?? null,
+            reviewedAt:    new Date().toISOString(),
+          },
+        });
+      }
 
-  if (didIt === null) {
-    _promptLock = false;
-    return;
-  }
-
-  const normalized = didIt.trim().toLowerCase();
-
-  if (normalized === "no") {
-    const why = window.prompt(
-      `Why not?\n\nExamples:\n- too tired\n- forgot\n- something else came up\n- avoided it`
-    );
-
-    _patchMeta(entry.slotId, {
-      reviewed: true,
-      review: {
-        outcome: "no",
-        why: why?.trim() || "",
-        reviewedAt: new Date().toISOString(),
-      },
-    });
-
-    _promptLock = false;
-    return;
-  }
-
-  if (normalized === "yes" || normalized === "partial") {
-    const onTime = window.prompt(
-      `Did you start within ±15 min?\nType: yes / late / early`
-    );
-
-    const actualMinutesRaw = window.prompt(
-      `How much time did it take?\nEnter minutes (example: 45)`
-    );
-
-    const effortRaw = window.prompt(
-      `How much effort?\nEnter 1 to 5`
-    );
-
-    const actualMinutes = Number(actualMinutesRaw);
-    const effort = Number(effortRaw);
-
-    _patchMeta(entry.slotId, {
-      reviewed: true,
-      review: {
-        outcome: normalized,
-        onTime: onTime?.trim().toLowerCase() || "",
-        actualMinutes: Number.isFinite(actualMinutes) ? actualMinutes : null,
-        effort: Number.isFinite(effort) ? effort : null,
-        reviewedAt: new Date().toISOString(),
-      },
-    });
-
-    _promptLock = false;
-    return;
-  }
-
-  // invalid input → don’t mark reviewed, ask later again
-  _promptLock = false;
+      _promptLock = false;
+    },
+  });
 }
 
 function _runLiveCoach(entries, now) {

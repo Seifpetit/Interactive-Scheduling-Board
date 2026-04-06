@@ -123,6 +123,10 @@ function _onClick(hovered, mouse) {
     if (ctx.hitTest(mouse.x, mouse.y)) { ctx.onClick(mouse.x, mouse.y); return; }
     ctx.close();
   }
+  if (R.modal.open && R.modal.type === "coach") {
+    UI_ELEMENTS.planner?.coachModal?.handleClick(mouse.x, mouse.y);
+    return;
+  }
 
   if (!hovered) {
     tray?.addInput?.cancel();
