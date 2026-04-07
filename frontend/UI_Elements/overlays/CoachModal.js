@@ -30,7 +30,7 @@ export class CoachModal extends UINode {
       color:      ACCENT,
       textColor:  "#dedede",
       hoverColor: ACCENT,
-      hoverText:  "#dedede",
+      hoverText:  "#ffffff",
       radius:     8,
       textSize:   18,
     });
@@ -82,9 +82,9 @@ export class CoachModal extends UINode {
       outcome: {
         question: "Did you do it?",
         options: [
-          { label: "✓  Yes",     value: "yes"     },
-          { label: "~  Partial", value: "partial"  },
-          { label: "✗  No",      value: "no"       },
+          { label: "Yes",     value: "yes"     },
+          { label: "~ Partial", value: "partial"  },
+          { label: "No",      value: "no"       },
         ],
       },
       why: {
@@ -155,7 +155,7 @@ export class CoachModal extends UINode {
         color:      DARK,
         textColor:  "#888888",
         hoverColor: ACCENT,
-        hoverText:  "#000000",
+        hoverText:  "#ffffff",
         radius:     8,
         textSize:   14,
       });
@@ -220,7 +220,7 @@ export class CoachModal extends UINode {
     const canGo = this._canConfirm();
     this._confirmButton.disabled  = !canGo;
     this._confirmButton.color     = canGo ? ACCENT : "#2a2a2a";
-    this._confirmButton.textColor = canGo ? "#000"  : "#444";
+    this._confirmButton.textColor = canGo ? "#ffffff"  : "#444";
     this._confirmButton.update(mouse);
 
     // smooth box material in
@@ -258,7 +258,7 @@ export class CoachModal extends UINode {
 
     // ── BACKDROP ──
     g.push();
-    g.fill(0, 200);
+    g.fill(0, 160);
     g.noStroke();
     g.rect(0, 0, W, H);
     g.pop();
@@ -280,26 +280,17 @@ export class CoachModal extends UINode {
     });
     g.pop();
 
-    // ── STEP DOTS ──
-    g.push();
-    g.noStroke();
-    const dotGap = 16;
-    const dotsW  = steps.length * dotGap;
-    let dx = W / 2 - dotsW / 2 + dotGap / 2;
-    for (let i = 0; i < steps.length; i++) {
-      const active = i === this._step;
-      g.fill(active ? ACCENT : "#333");
-      g.circle(dx, boxY + 20, active ? 8 : 5);
-      dx += dotGap;
-    }
-    g.pop();
 
     // ── TASK NAME ──
     if (entry?.task?.name) {
       g.push();
+      g.stroke("#0dc3aa");
+      g.strokeWeight(1.5);
+      g.noFill();
+      g.rect(boxX + 20, boxY + 20, boxW - 40, 40, 6);
       g.noStroke();
-      g.fill("#ffffff33");
-      g.textSize(10);
+      g.fill("#ffffff");
+      g.textSize(30);
       g.textAlign(g.CENTER, g.CENTER);
       const italic = R.assets?.fonts?.["Italic"];
       if (italic) g.textFont(italic);
@@ -315,7 +306,7 @@ export class CoachModal extends UINode {
     g.textAlign(g.CENTER, g.CENTER);
     const bold = R.assets?.fonts?.["Bold"];
     if (bold) g.textFont(bold);
-    g.text(def.question, W / 2, boxY + 62);
+    g.text(def.question, W / 2, boxY + 88);
     g.pop();
 
     // ── OPTION BUTTONS — layout + render ──
@@ -327,7 +318,7 @@ export class CoachModal extends UINode {
     const rows   = Math.ceil(opts.length / perRow);
     const totalW = perRow * optW + (perRow - 1) * optGap;
     const startX = W / 2 - totalW / 2;
-    const startY = boxY + 88;
+    const startY = boxY + 110;
 
     this._optionButtons.forEach((btn, i) => {
       const col = i % perRow;
@@ -349,6 +340,21 @@ export class CoachModal extends UINode {
     } else {
       this._otherInput.hide?.();
     }
+
+
+    // ── STEP DOTS ──
+    g.push();
+    g.noStroke();
+    const dotGap = 16;
+    const dotsW  = steps.length * dotGap;
+    let dx = W / 2 - dotsW / 2 + dotGap / 2;
+    for (let i = 0; i < steps.length; i++) {
+      const active = i === this._step;
+      g.fill(active ? ACCENT : "#333");
+      g.circle(dx, boxY + boxH - 70, active ? 8 : 5);
+      dx += dotGap;
+    }
+    g.pop();
 
     // ── CONFIRM BUTTON ──
     const confirmW = 130;

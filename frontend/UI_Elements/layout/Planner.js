@@ -316,7 +316,7 @@ export class Planner extends UINode {
 
   _renderOverlays(gOverlay) {
     this.contextMenu.render(gOverlay);
-    this.authModal.render(gOverlay);
+    //this.authModal.render(gOverlay);
     this.coachModal.render(gOverlay);
     this.toaster.render(gOverlay);
   }
