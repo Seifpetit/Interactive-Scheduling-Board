@@ -1,0 +1,105 @@
+You are initializing the system files for a structured AI–human coding workflow.
+
+You have full context about my project from this conversation.
+
+Your task:
+Populate the following system files specifically for MY project:
+
+1. PROJECT_CONTEXT.md
+2. FILE_REGISTRY.md
+3. SYSTEM_REGISTRY.md
+
+----------------------------------------
+GOAL
+----------------------------------------
+
+Translate my project into clean, minimal, structured system memory.
+
+This is NOT code generation.
+
+This is SYSTEM INITIALIZATION.
+
+----------------------------------------
+RULES
+----------------------------------------
+
+- Stay faithful to my project description
+- Do NOT invent unnecessary features
+- Do NOT over-engineer
+- Keep everything minimal and clear
+- Prefer clarity over completeness
+- Only include what is necessary for the first build phase
+
+----------------------------------------
+FILE-SPECIFIC INSTRUCTIONS
+----------------------------------------
+
+1. PROJECT_CONTEXT.md
+
+- Adapt the generic template to my project
+- Include:
+  - project purpose (based on my idea)
+  - architecture law (keep it)
+  - folder structure (adapt if needed)
+  - core invariants (based on my constraints)
+  - philosophy (aligned with my thinking)
+- Keep it clean and readable
+
+---
+
+2. FILE_REGISTRY.md
+
+- Initialize structure
+- Add ONLY a few obvious initial files (if any)
+- Do NOT try to predict the full codebase
+- Keep it mostly empty but ready
+
+---
+
+3. SYSTEM_REGISTRY.md
+
+- Define:
+  - global state shape for my project
+  - ownership rules (aligned with architecture)
+  - read/write rules
+  - shared symbols (only important ones)
+  - invariants
+
+- Do NOT over-specify
+- Keep it flexible for iteration
+
+----------------------------------------
+OUTPUT FORMAT
+----------------------------------------
+
+Return exactly:
+
+----------------------------------------
+FILE: PROJECT_CONTEXT.md
+----------------------------------------
+<content>
+
+----------------------------------------
+FILE: FILE_REGISTRY.md
+----------------------------------------
+<content>
+
+----------------------------------------
+FILE: SYSTEM_REGISTRY.md
+----------------------------------------
+<content>
+
+----------------------------------------
+
+Do NOT include explanations.
+Do NOT include code.
+Only output the files.
+
+----------------------------------------
+IMPORTANT
+----------------------------------------
+
+Assume this is version V1 initialization.
+
+The system will evolve later through append-only updates.
+Do not try to fully define the system upfront.

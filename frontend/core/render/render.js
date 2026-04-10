@@ -1,47 +1,41 @@
 import { UI_ELEMENTS } from "../operator.js";
-import { R } from "../runtime.js";
+import { R }           from "../runtime.js";
 
 window.R = R;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // renderFrame
-// Responsibility: draw all UI elements onto the p5 graphics layers.
-// Reads from R.reactions (via reactionFeedback) for visual overlays.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function renderFrame(p5, { gMain, gOverlay }) {
-  // 1️⃣ MAIN SCENE
   gMain.clear();
-    //
   gOverlay.clear();
+
   renderBackground(gMain, p5);
+
+  // ── MAIN SCENE ──
   UI_ELEMENTS.planner?.render(gMain, gOverlay);
 
-  // 2️⃣ BUILD BLUR BUFFER (LOW RES = FAKE BLUR)
+  // ── BLUR BUFFER ──
   const SCALE = 8;
-
   if (!R.render.blurLayer) {
     R.render.blurLayer = p5.createGraphics(
       gMain.width / SCALE,
       gMain.height / SCALE
     );
   }
+  R.render.blurLayer.clear();
+  R.render.blurLayer.image(gMain, 0, 0, R.render.blurLayer.width, R.render.blurLayer.height);
 
-  const blur = R.render.blurLayer;
-
-  blur.clear();
-
-  // 🔥 downscale (this creates blur effect)
-  blur.image(
-    gMain,
-    0, 0,
-    blur.width,
-    blur.height
-  );
-
-  
+  // ── OVERLAY PASS ──
   UI_ELEMENTS.button?.render(gOverlay);
-  //UI_ELEMENTS.exportButton?.render(gOverlay);
 
+  // temporal overlays — after planner, before modals
+  const grid = UI_ELEMENTS.planner?.grid;
+  UI_ELEMENTS.timeScrubber?.render(gOverlay, grid);
+  UI_ELEMENTS.upcomingPulse?.render(gOverlay, grid);
+
+  // modals always on top
   UI_ELEMENTS.authModal?.render(gOverlay);
 }
 
@@ -56,17 +50,11 @@ function renderBackground(g, p5) {
 
   for (let y = 0; y < g.height; y += spacing) {
     for (let x = 0; x < g.width; x += spacing) {
-
-      const n = p5.noise(x * 0.002, y * 0.002, t);
+      const n     = p5.noise(x * 0.002, y * 0.002, t);
       const angle = n * Math.PI * 2;
-
-      const len = 10;
-
-      const x2 = x + Math.cos(angle) * len;
-      const y2 = y + Math.sin(angle) * len;
-
+      const len   = 10;
       g.stroke(255, 255, 255, 15);
-      g.line(x, y, x2, y2);
+      g.line(x, y, x + Math.cos(angle) * len, y + Math.sin(angle) * len);
     }
   }
 

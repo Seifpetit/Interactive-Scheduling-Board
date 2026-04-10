@@ -1,0 +1,89 @@
+TARGET FILE REQUEST
+
+Mode:
+new_file 
+
+File path:
+core/time/timeSignals.js
+
+Feature:
+We want to add a new layer to the planner: temporal presence.
+
+The goal is not just “show current time.” The real goal is to make the board feel like it continues to live while the user is away, so that reopening the app carries a subconscious expectation that something has changed. Gmail has “new mail.” This planner should have “time has advanced, some moments are now closer, current, missed, or settled.”
+
+This is not a core CRUD feature. It is a psychological return mechanic built on top of the existing scheduler.
+
+The planner already has the right foundations for this:
+R is centralized truth, rendering is projection, the app already has real-time awareness through the coach layer, and the frame loop runs continuously. So this feature should be added as a clean architectural layer, not hacked into a single UI component. The feature must respect the doctrine that mutation, validation, coaching, and rendering stay separated.
+
+The feature has three parts.
+
+First, a live time scrubber. This is a visual line or marker that moves continuously through the current day column as the hours pass. It should not jump slot-by-slot; it should move smoothly based on the real current time. The purpose is to make time visible as a live force inside the board. When the user opens the planner, the board should immediately feel less static and more like a living surface.
+
+Second, an approaching-task attention signal. The next upcoming task, especially if it is within a configurable urgency window such as the next 60 to 90 minutes, should begin to attract attention. That can mean subtle growth, glow, pulse, or emphasis. The emotional effect should be: “hey, this is becoming relevant now.” Only one task should normally receive this focused emphasis, otherwise the system becomes noisy and the signal loses meaning.
+
+Third, a session-to-session return delta. When the user comes back after being away, the app should be able to detect that time passed and that some scheduled placements changed temporal category while the user was gone. For example, a task that was future is now current, or a task that was upcoming is now in the past and unresolved. This creates the deeper feeling that the board continued evolving without the user.
+
+Conceptually, we want to introduce a derived temporal model over placements. Every scheduled placement should be classifiable in time-relative terms such as:
+future, upcoming, current, past, missed, settled.
+
+These are not stored as backend truth. They are derived truth. They should be computed from:
+the placement start and end time, the current real time, and optionally the coach feedback state for that slot. The coach metadata already contains concepts like startPrompted, reviewed, and review, which can help distinguish “past but unresolved” from “settled.”
+
+Architecturally, this should become a small subsystem under core time logic plus UI overlay rendering.
+
+The clean implementation direction is:
+
+Create a pure derivation layer, likely under something like core/time/temporalModel.js, that inspects the current visible week, all placements, and current time, then returns a temporal snapshot for the frame. That snapshot should contain things like:
+the current now,
+which day column corresponds to today inside the visible week,
+the continuous scrubber position,
+the decorated placement entries with temporal state attached,
+and the single most relevant upcoming placement.
+
+This file should not render anything. It should only derive temporal truth.
+
+Then create a render-only overlay module, likely something like UI_Elements/overlay/TimeScrubberOverlay.js, which draws the scrubber onto the planner using already-derived geometry and temporal snapshot data. Since the app already has layered rendering with gMain and gOverlay, this scrubber belongs naturally in the overlay pass rather than inside the base layout components.
+
+Separately, create another render enhancement module for the approaching-task effect, something like UI_Elements/feedback/UpcomingTaskPulse.js. This module should not decide which task is urgent. It should simply receive the already-selected focus placement and render the emphasis effect.
+
+We also likely want a lightweight time utility module, for example core/time/timeSignals.js, holding easing and urgency math. That keeps pulse math and urgency interpolation out of layout code.
+
+Finally, for the “board lived while you were away” aspect, add a session memory helper such as core/time/sessionDelta.js. This should store a lastSeenAt timestamp in localStorage and compute what changed between the previous seen moment and now. This does not need to be complex initially. Even a minimal version that knows “user was away 6 hours” and “3 placements crossed from future/upcoming into past/current” is enough to support later toasts or subtle indicators.
+
+The integration point should be operator.js, because that file already owns orchestration and the UI registry. In the frame update path, after input capture and before render consumers need the result, the app should update R.time.now and compute R.time.temporalSnapshot. operator.js is also the right place to register new overlay UI modules. This matches the current architecture much better than pushing time logic down into Planner or DayColumn.
+
+boot.js is the correct place to initialize the session-delta side, because it already handles app startup and transition lifecycle. That is where last session timestamp can be loaded, and where the first return delta can be computed once the app state is ready.
+
+The important architectural rule is that this should remain a derived, layered system:
+not persisted server truth,
+not mutation logic,
+not validation logic,
+not business logic hidden inside rendering components.
+
+It should feel like a temporal lens placed over the existing planner.
+
+The intended emotional effect of the whole feature is:
+when the user opens the planner, it should feel like the board has not been frozen waiting for them. It has continued. Time moved. Some tasks are now closer. One may now demand attention. Some planned moments may already have slipped into the past. The board should feel like a living temporal environment, not a dead grid.
+
+Goal:
+<what this file should accomplish in the feature>
+
+Current system fit:
+- Reads from:
+- Writes to:
+- Called by:
+- Depends on:
+
+Responsibilities:
+- <responsibility 1>
+- <responsibility 2>
+
+Constraints:
+- Must follow current architecture
+- Must reuse existing symbols and ownership boundaries
+- Must not introduce parallel logic
+
+Non-goals:
+- <what this file must not do>
+- <what belongs in later cycles>

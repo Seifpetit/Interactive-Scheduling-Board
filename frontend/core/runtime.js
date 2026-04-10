@@ -16,6 +16,15 @@ export const R = {
   },
 
   // ─────────────────────────────────────────
+  // TIME  (written by operator.js each frame + boot.js once)
+  // ─────────────────────────────────────────
+  time: {
+    now:               null,   // Date — set each frame by operator.js
+    temporalSnapshot:  null,   // TemporalSnapshot — built by buildTemporalSnapshot(R) each frame
+    sessionDelta:      null,   // ReturnDelta — computed once on boot by boot.js
+  },
+
+  // ─────────────────────────────────────────
   // INPUT  (written by captureInput)
   // ─────────────────────────────────────────
   input: {
@@ -126,7 +135,7 @@ export const R = {
 
   assets: { fonts: {} },
 
-   render: {
+  render: {
     blurLayer: null,
     noiseTex: null,
   }
